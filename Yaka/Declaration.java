@@ -7,19 +7,24 @@ public class Declaration
   protected TabIdent m_tabIdent;
   protected int m_index;
   protected String m_name;
+  protected Ident.Type m_type;
+
+  protected static final int StackValueSize = 2;
 
   protected class Bool {
     public static final int True = -1;
     public static final int False = 0;
   }
 
-  public Declaration()
+  public Declaration(TabIdent tabIdent)
   {
-    m_tabIdent = new TabIdent(0);
-    m_index = -2;
+    m_tabIdent = tabIdent;
+    m_index = 0;
     m_name = null;
+    m_type = null;
   }
 
+  /** Constants **/
   public void constant(String name) throws RedeclaredIdentException
   {
     if (m_tabIdent.exists(name))
@@ -52,6 +57,32 @@ public class Declaration
     m_name = null;
   }
 
+  /** Variables **/
+  public void variable(Ident.Type type)
+  {
+    m_type = type;
+  }
+
+  public void variable(String name) throws RedeclaredIdentException
+  {
+    m_index -= StackValueSize;
+    add(name, new IdVar(m_type, m_index));
+  }
+
+  private void add(String name, IdVar ident) throws RedeclaredIdentException, RuntimeException
+  {
+    if (null == m_type)
+      throw new RuntimeException();
+
+    m_tabIdent.add(name, ident);
+  }
+
+  public int countVariables()
+  {
+    return -(m_index / StackValueSize);
+  }
+
+  /** General purpose **/
   public Ident get(String name) throws UndefinedIdentException
   {
     return m_tabIdent.find(name);
@@ -59,6 +90,6 @@ public class Declaration
 
   public String toString()
   {
-    return m_tabIdent.toString();
+    return "-- Symbols table:\n" + m_tabIdent.toString();
   }
 }

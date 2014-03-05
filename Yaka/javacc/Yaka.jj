@@ -17,10 +17,14 @@ import Yaka.Exception.YakaException;
 
 public class Yaka {
   public static Declaration declaration;
+  public static Expression expression;
+  public static TabIdent tabIdent;
 
   public static void init()
   {
-    declaration = new Declaration();
+    tabIdent = new TabIdent(10);
+    declaration = new Declaration(tabIdent);
+    expression = new Expression();
   }
 
   public static void main(String args[])
@@ -48,7 +52,8 @@ public class Yaka {
       analyseur = new Yaka(input);
       analyseur.analyse();
       System.out.println("analyse syntaxique reussie!");
-      System.out.println(declaration.toString());
+      System.out.println(declaration.toString() + "\n");
+      System.out.println(expression.toString());
     } catch (ParseException e) {
       String msg = e.getMessage();
       msg = msg.substring(0,msg.indexOf("\n"));
@@ -165,114 +170,116 @@ void declConst() throws YakaException : {}
 
 void defConst() throws YakaException : {}
 {
-  <ident>
-  {
-    declaration.constant(YakaTokenManager.identLu);
-  }
+  <ident> { declaration.constant(YakaTokenManager.identLu); }
 
   "=" valConst()
 }
 
 void valConst() throws YakaException : {}{
   <entier> { declaration.constant(Ident.Type.Integer, YakaTokenManager.entierLu); }
- | <ident> { declaration.constant(declaration.get(YakaTokenManager.identLu)); }
- | <VRAI>  { declaration.constant(Ident.Type.Boolean, -1); }
- | <FAUX>  { declaration.constant(Ident.Type.Boolean, 0); }
+ | <ident> { declaration.constant(tabIdent.find(YakaTokenManager.identLu)); }
+ | <VRAI>  { declaration.constant(Ident.Type.Boolean, true); }
+ | <FAUX>  { declaration.constant(Ident.Type.Boolean, false); }
 }
 
 
-void declVar() : {}
+void declVar() throws YakaException : {}
 {
   <VAR> type()
-  <ident>
+  <ident> { declaration.variable(YakaTokenManager.identLu); }
   (","
-      <ident>
+      <ident> { declaration.variable(YakaTokenManager.identLu); }
   )* ";"
 
 }
 
-void type() :{}
+void type() : {}
 {
-   <ENTIER>
- | <BOOLEEN>
+   <ENTIER>  { declaration.variable(Ident.Type.Integer); }
+ | <BOOLEEN> { declaration.variable(Ident.Type.Boolean); }
 }
+
 /*
  * Syntaxe des instructions.
  */
-void suiteExpr() : {}
+void suiteExpr() throws YakaException : {}
 { (expression() (";" (expression())? )*)? }
 
 
-
 /*
- * Expression .
+ * Expression.
  */
-void expression() : {}
+void expression() throws YakaException : {}
 {
   simpleExpr()
-  (opRel()
-  simpleExpr()
+  (
+    opRel()
+    simpleExpr() { expression.operation(); }
   )?
 }
 
-
-
-void simpleExpr() : {}
+void simpleExpr() throws YakaException : {}
 {
    terme()
-   (opAdd()
-   terme()
+   (
+    opAdd()
+    terme() { expression.operation(); }
    )*
 }
-void terme() : {}
+
+void terme() throws YakaException : {}
 {
   facteur()
-  (opMul()
-  facteur()
+  (
+    opMul()
+    facteur() { expression.operation(); }
   )*
 }
-void facteur() : {}
-{   primaire()
-  |  opNeg() primaire()
+
+void facteur() throws YakaException : {}
+{
+   primaire()
+ | opNeg() primaire()
 }
 
-void primaire (): {}
+void primaire () throws YakaException: {}
 {
    valeur()
  | "(" expression() ")"
 
 }
 
-void valeur () : {}
-{ <entier>
- | <ident>
- | <VRAI>
- | <FAUX>
+void valeur () throws YakaException : {}
+{
+   <entier> { expression.push(Ident.Type.Integer); }
+ | <ident> { expression.push(tabIdent.find(YakaTokenManager.identLu)); }
+ | <VRAI> { expression.push(Ident.Type.Boolean); }
+ | <FAUX> { expression.push(Ident.Type.Boolean); }
 
 }
 
 void opRel() : {}
 {
-   "="
- | "<>"
- | "<"
- | "<="
- | ">"
- | ">="
+   "="  { expression.push(Expression.Operator.Equals); }
+ | "<>" { expression.push(Expression.Operator.NEquals); }
+ | "<"  { expression.push(Expression.Operator.Lower); }
+ | "<=" { expression.push(Expression.Operator.LowerE); }
+ | ">"  { expression.push(Expression.Operator.Greater); }
+ | ">=" { expression.push(Expression.Operator.GreaterE); }
 }
 
 void opAdd() : {}
 {
-    "+"
-  |  "-"
-  | <OU>
+    "+" { expression.push(Expression.Operator.Plus); }
+  | "-" { expression.push(Expression.Operator.Minus); }
+  | <OU> { expression.push(Expression.Operator.Or); }
 }
 
 void opMul() : {}
 {
-  "*"
-  | "/"
-  | <ET>
+    "*" { expression.push(Expression.Operator.Times); }
+  | "/" { expression.push(Expression.Operator.Div); }
+  | <ET> { expression.push(Expression.Operator.And); }
 }
 
 void opNeg() : {}

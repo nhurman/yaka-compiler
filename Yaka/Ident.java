@@ -3,8 +3,13 @@ package Yaka;
 public abstract class Ident
 {
   public static enum Type {
+    Error,
     Boolean,
-    Integer
+    Integer;
+
+    public static String[] str = {
+      "Error", "Boolean", "Integer"
+    };
   };
 
   protected Type m_type;
@@ -28,13 +33,6 @@ public abstract class Ident
 
   public String toString()
   {
-    String out = "";
-    switch (m_type) {
-      case Boolean: out += "Boolean"; break;
-      case Integer: out += "Integer"; break;
-      default: out += "UNKNOWN";
-    }
-
-    return out;
+    return Type.str[m_type.ordinal()];
   }
 }
