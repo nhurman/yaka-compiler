@@ -10,8 +10,21 @@ options{
 
 PARSER_BEGIN(Yaka)
 
+package Yaka.javacc;
+
+import Yaka.*;
+import Yaka.Exception.YakaException;
+
 public class Yaka {
-  public static void main(String args[]) {
+  public static Declaration declaration;
+
+  public static void init()
+  {
+    declaration = new Declaration();
+  }
+
+  public static void main(String args[])
+  {
     Yaka analyseur;
     java.io.InputStream input;
 
@@ -31,13 +44,17 @@ public class Yaka {
       return;
     }
     try {
+      init();
       analyseur = new Yaka(input);
       analyseur.analyse();
       System.out.println("analyse syntaxique reussie!");
+      System.out.println(declaration.toString());
     } catch (ParseException e) {
       String msg = e.getMessage();
       msg = msg.substring(0,msg.indexOf("\n"));
       System.out.println("Erreur de syntaxe : "+msg);
+    } catch (YakaException e) {
+      System.out.println("Erreur de compilation : " + e.toString());
     }
   }
 }
@@ -128,37 +145,39 @@ TOKEN  :
 /**************************************/
 /********debut de la grammaire ********/
 /**************************************/
-void analyse() : {}
+void analyse() throws YakaException : {}
 {
    <PROGRAMME> <ident>
    bloc()
    <FPROGRAMME>
 }
 
-void bloc() : {}{
+void bloc() throws YakaException : {}{
  (declConst())*
  (declVar())*
    suiteExpr()
 }
 
-void declConst() : {}
+void declConst() throws YakaException : {}
 {
   <CONST>  defConst() ( "," defConst())* ";"
 }
 
-void defConst() : {}
+void defConst() throws YakaException : {}
 {
-
   <ident>
-   "=" valConst()
+  {
+    declaration.constant(YakaTokenManager.identLu);
+  }
 
+  "=" valConst()
 }
 
-void valConst() : {}{
-  <entier>
- | <ident>
- | <VRAI>
- | <FAUX>
+void valConst() throws YakaException : {}{
+  <entier> { declaration.constant(Ident.Type.Integer, YakaTokenManager.entierLu); }
+ | <ident> { declaration.constant(declaration.get(YakaTokenManager.identLu)); }
+ | <VRAI>  { declaration.constant(Ident.Type.Boolean, -1); }
+ | <FAUX>  { declaration.constant(Ident.Type.Boolean, 0); }
 }
 
 
