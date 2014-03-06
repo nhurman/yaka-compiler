@@ -6,11 +6,13 @@ import java.util.HashMap;
 
 public class TabIdent
 {
+  protected ErrorBag m_errors;
   protected HashMap<String, Ident> m_idents;
 
-  public TabIdent(int size)
+  public TabIdent(ErrorBag errors, int size)
   {
-    m_idents = new HashMap<String, Ident>();
+    m_errors = errors;
+    m_idents = new HashMap<String, Ident>(size);
   }
 
   public boolean exists(String key)
@@ -20,8 +22,10 @@ public class TabIdent
 
   public Ident find(String key) throws UndefinedIdentException
   {
-    if (!exists(key))
-      throw new UndefinedIdentException();
+    if (!exists(key)) {
+      m_errors.add(new UndefinedIdentException(key));
+      return new Ident(Ident.Type.Error);
+    }
 
     return m_idents.get(key);
   }
@@ -29,9 +33,9 @@ public class TabIdent
   public void add(String key, Ident val) throws RedeclaredIdentException
   {
     if (exists(key))
-      throw new RedeclaredIdentException();
-
-    set(key, val);
+      m_errors.add(new RedeclaredIdentException(key));
+    else
+      set(key, val);
   }
 
   public void set(String key, Ident val)

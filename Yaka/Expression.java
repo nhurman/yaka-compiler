@@ -1,5 +1,6 @@
 package Yaka;
 
+import Yaka.Ident.Type;
 import Yaka.Exception.TypeMismatchException;
 import java.util.ArrayDeque;
 
@@ -21,52 +22,54 @@ public class Expression
     And,
     Or;
 
-    public static String[] str = {
+    public static final String[] str = {
       "+", "-", "*", "/",
       "<", ">", "<=", ">=",
       "=", "<>", "ET", "OU"
     };
   };
 
+  ErrorBag m_errors;
   ArrayDeque<Operator> m_opStack;
-  ArrayDeque<Ident.Type> m_typeStack;
+  ArrayDeque<Type> m_typeStack;
 
-  public Expression()
+  public Expression(ErrorBag errors)
   {
+    m_errors = errors;
     m_opStack = new ArrayDeque<Operator>();
-    m_typeStack = new ArrayDeque<Ident.Type>();
+    m_typeStack = new ArrayDeque<Type>();
   }
 
-  public static Ident.Type computeType(Ident.Type t1, Operator op, Ident.Type t2)
+  public static Type computeType(Type t1, Operator op, Type t2)
   {
     if (t1 != t2) {
-      return Ident.Type.Error;
+      return Type.Error;
     }
 
     int o = op.ordinal();
 
     if (Operator.Plus.ordinal() <= o && o <= Operator.Div.ordinal()) {
-      if (Ident.Type.Integer == t1) {
-        return Ident.Type.Integer;
+      if (Type.Integer == t1) {
+        return Type.Integer;
       }
     }
     else if (Operator.Lower.ordinal() <= o && o <= Operator.GreaterE.ordinal()) {
-      if (Ident.Type.Integer == t1) {
-        return Ident.Type.Boolean;
+      if (Type.Integer == t1) {
+        return Type.Boolean;
       }
     }
     else if (Operator.Equals.ordinal() <= o && o <= Operator.NEquals.ordinal()) {
-      if (Ident.Type.Error != t1) {
-        return Ident.Type.Boolean;
+      if (Type.Error != t1) {
+        return Type.Boolean;
       }
     }
     else if (Operator.And.ordinal() <= o && o <= Operator.Or.ordinal()) {
-      if (Ident.Type.Boolean == t1) {
-        return Ident.Type.Boolean;
+      if (Type.Boolean == t1) {
+        return Type.Boolean;
       }
     }
 
-    return Ident.Type.Error;
+    return Type.Error;
   }
 
   public void push(Operator op)
@@ -79,20 +82,22 @@ public class Expression
     m_typeStack.push(ident.type());
   }
 
-  public void push(Ident.Type type)
+  public void push(Type type)
   {
     m_typeStack.push(type);
   }
 
   public void operation() throws TypeMismatchException
   {
-    Ident.Type t2 = m_typeStack.pop();
-    Ident.Type t1 = m_typeStack.pop();
+    Type t2 = m_typeStack.pop();
+    Type t1 = m_typeStack.pop();
     Operator op = m_opStack.pop();
-    Ident.Type result = computeType(t1, op, t2);
+    Type result = computeType(t1, op, t2);
 
-    //if (result == Ident.Type.Error)
-    //  throw new TypeMismatchException();
+    if (result == Type.Error
+     && Type.Error != t1
+     && Type.Error != t2)
+      m_errors.add(new TypeMismatchException(t1, op, t2));
 
     m_typeStack.push(result);
   }
@@ -105,8 +110,8 @@ public class Expression
     }
 
     out += "\n-- Types:\n";
-    for (Ident.Type type: m_typeStack) {
-      out += Ident.Type.str[type.ordinal()] + "\n";
+    for (Type type: m_typeStack) {
+      out += Type.str[type.ordinal()] + "\n";
     }
 
     return out;

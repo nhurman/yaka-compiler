@@ -19,12 +19,14 @@ public class Yaka {
   public static Declaration declaration;
   public static Expression expression;
   public static TabIdent tabIdent;
+  public static ErrorBag errors;
 
   public static void init()
   {
-    tabIdent = new TabIdent(10);
-    declaration = new Declaration(tabIdent);
-    expression = new Expression();
+    errors = new ErrorBag();
+    tabIdent = new TabIdent(errors, 10);
+    declaration = new Declaration(errors, tabIdent);
+    expression = new Expression(errors);
   }
 
   public static void main(String args[])
@@ -32,19 +34,19 @@ public class Yaka {
     Yaka analyseur;
     java.io.InputStream input;
 
-    if (args.length==1) {
-      System.out.print(args[args.length-1] + ": ");
+    if (args.length == 1) {
+      System.out.print(args[0] + ": ");
       try {
-        input = new java.io.FileInputStream(args[args.length-1]+".yaka");
+        input = new java.io.FileInputStream(args[0]);
       } catch (java.io.FileNotFoundException e) {
         System.out.println("Fichier introuvable.");
         return;
       }
-    } else if (args.length==0) {
+    } else if (args.length == 0) {
       System.out.println("Lecture sur l'entree standard...");
       input = System.in;
     } else {
-      System.out.println("Usage: java Gram [fichier]");
+      System.out.println("Usage: java " + Yaka.class.getName() + " [fichier]");
       return;
     }
     try {
@@ -52,13 +54,14 @@ public class Yaka {
       analyseur = new Yaka(input);
       analyseur.analyse();
       System.out.println("analyse syntaxique reussie!");
-      System.out.println(declaration.toString() + "\n");
-      System.out.println(expression.toString());
+      System.out.println(errors);
+      System.out.println(declaration + "\n");
+      System.out.println(expression);
     } catch (ParseException e) {
-      String msg = e.getMessage();
-      msg = msg.substring(0,msg.indexOf("\n"));
-      System.out.println("Erreur de syntaxe : "+msg);
+      //errors.add(Error.Syntax, e.getMessage());
+      //msg = msg.substring(0,msg.indexOf("\n"));
     } catch (YakaException e) {
+      //errors.add(Error.Compi, )
       System.out.println("Erreur de compilation : " + e.toString());
     }
   }

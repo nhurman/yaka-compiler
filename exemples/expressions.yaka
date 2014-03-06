@@ -1,4 +1,4 @@
-PROGRAMME affectation
+PROGRAMME expressions
 CONST
   aa=10,
   ba=VRAI,
