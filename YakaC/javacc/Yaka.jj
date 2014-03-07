@@ -63,8 +63,6 @@ public class Yaka {
 
       analyseur = new Yaka(input);
       analyseur.analyse();
-      //System.out.println("analyse syntaxique reussie!");
-      System.err.println(errors);
       //System.out.println(declaration + "\n");
       //System.out.println(expression);
     } catch (java.io.FileNotFoundException e) {
@@ -73,8 +71,9 @@ public class Yaka {
       errors.add(new YakaC.Exception.ParseException(e.getMessage()));
       //msg = msg.substring(0,msg.indexOf("\n"));
     } catch (YakaException e) {
-      //errors.add(Error.Compi, )
       System.err.println("Erreur de compilation : " + e.toString());
+    } finally {
+      System.err.println(errors);
     }
   }
 }
@@ -252,7 +251,7 @@ void terme() throws YakaException : {}
 void facteur() throws YakaException : {}
 {
    primaire()
- | opNeg() primaire()
+ | opNeg() primaire() { expression.operation(); }
 }
 
 void primaire () throws YakaException: {}
@@ -307,8 +306,9 @@ void opMul() : {}
 }
 
 void opNeg() : {}
-{ "-"
- | <NON>
+{
+    "-" { expression.push(Expression.Operator.Negate); }
+  | <NON> { expression.push(Expression.Operator.Negate); }
 }
 
 

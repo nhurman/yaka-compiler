@@ -23,7 +23,18 @@ public class Expression
     And,
     Or,
 
-    Neg;
+    Negate;
+
+    protected boolean m_unary = false;
+
+    static {
+      Negate.m_unary = true;
+    }
+
+    public boolean unary()
+    {
+      return m_unary;
+    }
   };
 
   ErrorBag m_errors;
@@ -86,12 +97,23 @@ public class Expression
 
   public void operation() throws TypeMismatchException
   {
-    Type t2 = m_typeStack.pop();
-    Type t1 = m_typeStack.pop();
     Operator operator = m_opStack.pop();
-    Operation op = new Operation(t1, operator, t2);
+    Type t1, t2, result;
+    Operation op;
 
-    Type result = computeType(op);
+    if (operator.unary()) {
+      t1 = m_typeStack.pop();
+      t2 = t1;
+      result = t1;
+      op = new Operation(t1, operator, t2);
+    }
+    else {
+      t2 = m_typeStack.pop();
+      t1 = m_typeStack.pop();
+
+      op = new Operation(t1, operator, t2);
+      result = computeType(op);
+    }
 
     if (result == Type.Error
      && Type.Error != t1

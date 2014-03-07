@@ -32,7 +32,7 @@ public class YVM
       public void execute(Object params) {
         m_writer.println("entete");
       }
-    });
+    }, "YVM");
 
     manager.register(Event.ExpressionsStart, new EventHandler() {
       public void execute(Object params) {
@@ -115,7 +115,7 @@ public class YVM
           m_writer.println("ior");
         }
 
-        else if (Operator.Neg == op) {
+        else if (Operator.Negate == op) {
           m_writer.println("ineg");
         }
 
