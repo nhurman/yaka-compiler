@@ -2,6 +2,7 @@ package YakaC;
 
 import YakaC.javacc.Yaka;
 import YakaC.Target.YVM;
+import YakaC.Target.ASM;
 
 public class Main
 {
@@ -43,6 +44,7 @@ public class Main
     yaka.init();
 
     YVM yvm = new YVM(yaka, out);
+    ASM asm = new ASM(yaka, out);
 
     try {
       yaka.analyse();
