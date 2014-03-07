@@ -1,13 +1,17 @@
 package YakaC.Parser;
 
 import YakaC.Exception.YakaException;
-import YakaC.Event.Event;
 import YakaC.Event.EventManager;
 import YakaC.javacc.Yaka;
 import java.util.ArrayDeque;
 
 public class ErrorBag
 {
+  public static enum Event implements YakaC.Event.Event
+  {
+    Error;
+  }
+
   protected static class Error
   {
     public YakaException exception;

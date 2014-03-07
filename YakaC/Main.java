@@ -52,7 +52,7 @@ public class Main
       yaka.errorBag().add(
         new YakaC.Exception.ParseException(e.getMessage()));
     } finally {
-      System.out.print(yaka.errorBag());
+      System.err.print(yaka.errorBag());
     }
   }
 }

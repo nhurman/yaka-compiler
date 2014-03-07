@@ -1,15 +1,5 @@
 package YakaC.Event;
 
-public enum Event
+public interface Event
 {
-  Error,
-
-  ProgramStart,
-  ProgramEnd,
-  ExpressionsStart,
-  Operation,
-
-  Integer,
-  Identifier,
-  Boolean
 }

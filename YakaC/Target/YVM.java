@@ -17,7 +17,6 @@ public class YVM
   protected PrintWriter m_writer;
   protected boolean m_error;
 
-
   public YVM(final Yaka yaka, OutputStream os)
   {
     m_writer = new java.io.PrintWriter(os, true);
@@ -25,33 +24,33 @@ public class YVM
 
     final EventManager manager = yaka.eventManager();
 
-    manager.register(Event.Error, new EventHandler() {
+    manager.register(YakaC.Parser.ErrorBag.Event.Error, new EventHandler() {
       public void execute(Object params) {
         manager.unregister("YVM");
         m_writer.println("Stopping YVM code generation due to error");
       }
     }, "YVM");
 
-    manager.register(Event.ProgramStart, new EventHandler() {
+    manager.register(Yaka.Event.ProgramStart, new EventHandler() {
       public void execute(Object params) {
         m_writer.println("entete");
       }
     }, "YVM");
 
-    manager.register(Event.ExpressionsStart, new EventHandler() {
+    manager.register(Yaka.Event.ExpressionsStart, new EventHandler() {
       public void execute(Object params) {
         m_writer.println("ouvrePrinc " + yaka.tabIdent()
           .count(Ident.Kind.Variable) * StackValueSize);
       }
     }, "YVM");
 
-    manager.register(Event.Integer, new EventHandler() {
+    manager.register(Yaka.Event.Integer, new EventHandler() {
       public void execute(Object params) {
         m_writer.println("iconst " + params);
       }
     }, "YVM");
 
-    manager.register(Event.Identifier, new EventHandler() {
+    manager.register(Yaka.Event.Identifier, new EventHandler() {
       public void execute(Object params) {
         try {
           Ident ident = yaka.tabIdent().find((String)params);
@@ -70,7 +69,7 @@ public class YVM
       }
     }, "YVM");
 
-    manager.register(Event.Boolean, new EventHandler() {
+    manager.register(Yaka.Event.Boolean, new EventHandler() {
       public void execute(Object params) {
         Boolean b = (Boolean)params;
         int value = b ? Ident.Boolean.True : Ident.Boolean.False;
@@ -78,7 +77,7 @@ public class YVM
       }
     }, "YVM");
 
-    manager.register(Event.Operation, new EventHandler() {
+    manager.register(YakaC.Parser.Expression.Event.Operation, new EventHandler() {
       public void execute(Object params) {
         Operator op = (Operator)params;
         if (Operator.Plus == op) {
@@ -130,7 +129,7 @@ public class YVM
       }
     }, "YVM");
 
-    manager.register(Event.ProgramEnd, new EventHandler() {
+    manager.register(Yaka.Event.ProgramEnd, new EventHandler() {
       public void execute(Object params) {
         m_writer.println("queue");
       }

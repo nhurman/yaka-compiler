@@ -7,6 +7,11 @@ import java.util.ArrayDeque;
 
 public class Expression
 {
+  public static enum Event implements YakaC.Event.Event
+  {
+    Operation;
+  }
+
   public static enum Operator {
     Plus,
     Minus,

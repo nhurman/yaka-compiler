@@ -14,28 +14,39 @@ PARSER_BEGIN(Yaka)
 package YakaC.javacc;
 
 import YakaC.*;
-import YakaC.Event.*;
 import YakaC.Parser.*;
 import YakaC.Target.*;
 import YakaC.Exception.YakaException;
 
 public class Yaka {
-  protected EventManager m_eventManager;
+  protected YakaC.Event.EventManager m_eventManager;
   protected ErrorBag m_errors;
   protected TabIdent m_tabIdent;
   protected Declaration m_declaration;
   protected Expression m_expression;
 
+  public static enum Event implements YakaC.Event.Event
+  {
+    ProgramStart,
+    ProgramEnd,
+    ExpressionsStart,
+    Operation,
+
+    Integer,
+    Identifier,
+    Boolean;
+  }
+
   public void init()
   {
-    m_eventManager = new EventManager();
+    m_eventManager = new YakaC.Event.EventManager();
     m_errors = new ErrorBag(this, m_eventManager, false);
     m_tabIdent = new TabIdent(m_errors, 10);
     m_declaration = new Declaration(m_errors, m_eventManager, m_tabIdent);
     m_expression = new Expression(m_errors, m_eventManager);
   }
 
-  public EventManager eventManager()
+  public YakaC.Event.EventManager eventManager()
   {
     return m_eventManager;
   }
@@ -136,15 +147,15 @@ TOKEN  :
 /**************************************/
 void analyse() throws YakaException : {}
 {
-  <PROGRAMME> <ident> {m_eventManager.emit(Event.ProgramStart, token_source.identLu); }
+  <PROGRAMME> <ident> { m_eventManager.emit(Event.ProgramStart, token_source.identLu); }
   bloc()
-  <FPROGRAMME> {m_eventManager.emit(Event.ProgramEnd); }
+  <FPROGRAMME> { m_eventManager.emit(Event.ProgramEnd); }
 }
 
 void bloc() throws YakaException : {}{
  (declConst())*
  (declVar())*
- {m_eventManager.emit(Event.ExpressionsStart); }
+ { m_eventManager.emit(Event.ExpressionsStart); }
    suiteExpr()
 }
 
