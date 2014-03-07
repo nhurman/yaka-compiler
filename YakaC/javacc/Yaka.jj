@@ -6,6 +6,7 @@
 
 options{
 	JDK_VERSION="1.5";
+  STATIC=false;
 }
 
 PARSER_BEGIN(Yaka)
@@ -14,67 +15,39 @@ package YakaC.javacc;
 
 import YakaC.*;
 import YakaC.Event.*;
+import YakaC.Parser.*;
+import YakaC.Target.*;
 import YakaC.Exception.YakaException;
 
 public class Yaka {
-  public static EventManager eventManager;
-  public static ErrorBag errors;
-  public static TabIdent tabIdent;
-  public static Declaration declaration;
-  public static Expression expression;
-  public static YVM yvm;
+  protected EventManager m_eventManager;
+  protected ErrorBag m_errors;
+  protected TabIdent m_tabIdent;
+  protected Declaration m_declaration;
+  protected Expression m_expression;
 
-  public static void init(java.io.OutputStream os)
+  public void init()
   {
-    eventManager = new EventManager();
-    errors = new ErrorBag(eventManager, false);
-    tabIdent = new TabIdent(errors, 10);
-    declaration = new Declaration(errors, eventManager, tabIdent);
-    expression = new Expression(errors, eventManager);
-    yvm = new YVM(os, eventManager, tabIdent);
+    m_eventManager = new EventManager();
+    m_errors = new ErrorBag(this, m_eventManager, false);
+    m_tabIdent = new TabIdent(m_errors, 10);
+    m_declaration = new Declaration(m_errors, m_eventManager, m_tabIdent);
+    m_expression = new Expression(m_errors, m_eventManager);
   }
 
-  public static void main(String args[])
+  public EventManager eventManager()
   {
-    Yaka analyseur;
-    java.io.InputStream input;
-    String yvmFilename;
+    return m_eventManager;
+  }
 
-    if (args.length == 2) {
-      try {
-        input = new java.io.FileInputStream(args[0]);
-        yvmFilename = args[1];
-      } catch (java.io.FileNotFoundException e) {
-        System.err.println("Fichier introuvable.");
-        return;
-      }
-    } else if (args.length == 1) {
-      System.err.println("Lecture sur l'entree standard...");
-      input = System.in;
-      yvmFilename = args[0];
-    } else {
-      System.err.println("Usage: java " + Yaka.class.getName() + " [yaka] [yvm]");
-      return;
-    }
-    try {
-      java.io.File fp = new java.io.File(yvmFilename);
-      java.io.FileOutputStream os = new java.io.FileOutputStream(fp);
-      init(System.out);
+  public ErrorBag errorBag()
+  {
+    return m_errors;
+  }
 
-      analyseur = new Yaka(input);
-      analyseur.analyse();
-      //System.out.println(declaration + "\n");
-      //System.out.println(expression);
-    } catch (java.io.FileNotFoundException e) {
-      System.err.println("Impossible d'ouvrir le fichier de sortie.");
-    } catch (ParseException e) {
-      errors.add(new YakaC.Exception.ParseException(e.getMessage()));
-      //msg = msg.substring(0,msg.indexOf("\n"));
-    } catch (YakaException e) {
-      System.err.println("Erreur de compilation : " + e.toString());
-    } finally {
-      System.err.println(errors);
-    }
+  public TabIdent tabIdent()
+  {
+    return m_tabIdent;
   }
 }
 
@@ -86,8 +59,8 @@ PARSER_END(Yaka)
 
 TOKEN_MGR_DECLS:
 {
-  public static String identLu, chaineLue;
-  public static int entierLu;
+  public String identLu, chaineLue;
+  public int entierLu;
 }
 
 /*** Skip whitespace and comments ***/
@@ -163,15 +136,15 @@ TOKEN  :
 /**************************************/
 void analyse() throws YakaException : {}
 {
-  <PROGRAMME> <ident> { eventManager.emit(Event.ProgramStart, YakaTokenManager.identLu); }
+  <PROGRAMME> <ident> {m_eventManager.emit(Event.ProgramStart, token_source.identLu); }
   bloc()
-  <FPROGRAMME> { eventManager.emit(Event.ProgramEnd); }
+  <FPROGRAMME> {m_eventManager.emit(Event.ProgramEnd); }
 }
 
 void bloc() throws YakaException : {}{
  (declConst())*
  (declVar())*
- { eventManager.emit(Event.ExpressionsStart); }
+ {m_eventManager.emit(Event.ExpressionsStart); }
    suiteExpr()
 }
 
@@ -182,33 +155,33 @@ void declConst() throws YakaException : {}
 
 void defConst() throws YakaException : {}
 {
-  <ident> { declaration.constant(YakaTokenManager.identLu); }
+  <ident> { m_declaration.constant(token_source.identLu); }
 
   "=" valConst()
 }
 
 void valConst() throws YakaException : {}{
-  <entier> { declaration.constant(Ident.Type.Integer, YakaTokenManager.entierLu); }
- | <ident> { declaration.constant(tabIdent.find(YakaTokenManager.identLu)); }
- | <VRAI>  { declaration.constant(Ident.Type.Boolean, true); }
- | <FAUX>  { declaration.constant(Ident.Type.Boolean, false); }
+  <entier> { m_declaration.constant(Ident.Type.Integer, token_source.entierLu); }
+ | <ident> { m_declaration.constant(m_tabIdent.find(token_source.identLu)); }
+ | <VRAI>  { m_declaration.constant(Ident.Type.Boolean, true); }
+ | <FAUX>  { m_declaration.constant(Ident.Type.Boolean, false); }
 }
 
 
 void declVar() throws YakaException : {}
 {
   <VAR> type()
-  <ident> { declaration.variable(YakaTokenManager.identLu); }
+  <ident> { m_declaration.variable(token_source.identLu); }
   (","
-      <ident> { declaration.variable(YakaTokenManager.identLu); }
+      <ident> { m_declaration.variable(token_source.identLu); }
   )* ";"
 
 }
 
 void type() : {}
 {
-   <ENTIER>  { declaration.variable(Ident.Type.Integer); }
- | <BOOLEEN> { declaration.variable(Ident.Type.Boolean); }
+   <ENTIER>  { m_declaration.variable(Ident.Type.Integer); }
+ | <BOOLEEN> { m_declaration.variable(Ident.Type.Boolean); }
 }
 
 /*
@@ -226,7 +199,7 @@ void expression() throws YakaException : {}
   simpleExpr()
   (
     opRel()
-    simpleExpr() { expression.operation(); }
+    simpleExpr() { m_expression.operation(); }
   )?
 }
 
@@ -235,7 +208,7 @@ void simpleExpr() throws YakaException : {}
    terme()
    (
     opAdd()
-    terme() { expression.operation(); }
+    terme() { m_expression.operation(); }
    )*
 }
 
@@ -244,14 +217,14 @@ void terme() throws YakaException : {}
   facteur()
   (
     opMul()
-    facteur() { expression.operation(); }
+    facteur() { m_expression.operation(); }
   )*
 }
 
 void facteur() throws YakaException : {}
 {
    primaire()
- | opNeg() primaire() { expression.operation(); }
+ | opNeg() primaire() { m_expression.operation(); }
 }
 
 void primaire () throws YakaException: {}
@@ -264,51 +237,51 @@ void primaire () throws YakaException: {}
 void valeur () throws YakaException : {}
 {
    <entier> {
-    expression.push(Ident.Type.Integer);
-    eventManager.emit(Event.Integer, new Integer(YakaTokenManager.entierLu));
+    m_expression.push(Ident.Type.Integer);
+   m_eventManager.emit(Event.Integer, new Integer(token_source.entierLu));
    }
  | <ident> {
-    expression.push(tabIdent.find(YakaTokenManager.identLu));
-    eventManager.emit(Event.Identifier, YakaTokenManager.identLu);
+    m_expression.push(m_tabIdent.find(token_source.identLu));
+   m_eventManager.emit(Event.Identifier, token_source.identLu);
   }
  | <VRAI> {
-    expression.push(Ident.Type.Boolean);
-    eventManager.emit(Event.Boolean, new Boolean(true));
+    m_expression.push(Ident.Type.Boolean);
+   m_eventManager.emit(Event.Boolean, new Boolean(true));
   }
  | <FAUX> {
-    expression.push(Ident.Type.Boolean);
-    eventManager.emit(Event.Boolean, new Boolean(false));
+    m_expression.push(Ident.Type.Boolean);
+   m_eventManager.emit(Event.Boolean, new Boolean(false));
  }
 }
 
 void opRel() : {}
 {
-   "="  { expression.push(Expression.Operator.Equals); }
- | "<>" { expression.push(Expression.Operator.NEquals); }
- | "<"  { expression.push(Expression.Operator.Lower); }
- | "<=" { expression.push(Expression.Operator.LowerE); }
- | ">"  { expression.push(Expression.Operator.Greater); }
- | ">=" { expression.push(Expression.Operator.GreaterE); }
+   "="  { m_expression.push(Expression.Operator.Equals); }
+ | "<>" { m_expression.push(Expression.Operator.NEquals); }
+ | "<"  { m_expression.push(Expression.Operator.Lower); }
+ | "<=" { m_expression.push(Expression.Operator.LowerE); }
+ | ">"  { m_expression.push(Expression.Operator.Greater); }
+ | ">=" { m_expression.push(Expression.Operator.GreaterE); }
 }
 
 void opAdd() : {}
 {
-    "+" { expression.push(Expression.Operator.Plus); }
-  | "-" { expression.push(Expression.Operator.Minus); }
-  | <OU> { expression.push(Expression.Operator.Or); }
+    "+" { m_expression.push(Expression.Operator.Plus); }
+  | "-" { m_expression.push(Expression.Operator.Minus); }
+  | <OU> { m_expression.push(Expression.Operator.Or); }
 }
 
 void opMul() : {}
 {
-    "*" { expression.push(Expression.Operator.Times); }
-  | "/" { expression.push(Expression.Operator.Div); }
-  | <ET> { expression.push(Expression.Operator.And); }
+    "*" { m_expression.push(Expression.Operator.Times); }
+  | "/" { m_expression.push(Expression.Operator.Div); }
+  | <ET> { m_expression.push(Expression.Operator.And); }
 }
 
 void opNeg() : {}
 {
-    "-" { expression.push(Expression.Operator.Negate); }
-  | <NON> { expression.push(Expression.Operator.Negate); }
+    "-" { m_expression.push(Expression.Operator.Negate); }
+  | <NON> { m_expression.push(Expression.Operator.Negate); }
 }
 
 

@@ -2,5 +2,5 @@
 pushd %~dp0..\YakaC\javacc
 call javacc Yaka.jj
 cd ..
-call javac *.java javacc\*.java Event\*.java Exception\*.java
+call javac *.java javacc\*.java Event\*.java Exception\*.java Parser\*.java Target\*.java
 popd

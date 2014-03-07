@@ -1,7 +1,7 @@
 @echo off
 if [%1]==[] goto usage
 pushd %~dp0..
-java YakaC.javacc.Yaka exemples/%1.yaka out/%1.yvm 
+java YakaC.Main exemples/%1.yaka
 popd
 goto eof
 

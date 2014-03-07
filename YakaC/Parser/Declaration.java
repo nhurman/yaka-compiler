@@ -1,10 +1,11 @@
-package YakaC;
+package YakaC.Parser;
 
-import YakaC.Ident.Type;
-import YakaC.Ident.Boolean;
+import YakaC.Parser.Ident.Type;
+import YakaC.Parser.Ident.Boolean;
 import YakaC.Event.EventManager;
 import YakaC.Exception.RedeclaredIdentException;
 import YakaC.Exception.UndefinedIdentException;
+import YakaC.Target.YVM;
 
 public class Declaration
 {

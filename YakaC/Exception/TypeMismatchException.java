@@ -1,7 +1,7 @@
 package YakaC.Exception;
 
-import YakaC.Ident.Type;
-import YakaC.Expression.Operator;
+import YakaC.Parser.Ident.Type;
+import YakaC.Parser.Expression.Operator;
 
 public class TypeMismatchException extends YakaException
 {

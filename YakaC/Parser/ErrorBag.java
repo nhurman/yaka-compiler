@@ -1,4 +1,4 @@
-package YakaC;
+package YakaC.Parser;
 
 import YakaC.Exception.YakaException;
 import YakaC.Event.Event;
@@ -24,12 +24,14 @@ public class ErrorBag
     }
   }
 
+  protected Yaka m_yaka;
   protected EventManager m_eventManager;
   protected boolean m_throw;
   protected ArrayDeque<Error> m_errors;
 
-  public ErrorBag(EventManager eventManager, boolean throwExceptions)
+  public ErrorBag(Yaka yaka, EventManager eventManager, boolean throwExceptions)
   {
+    m_yaka = yaka;
     m_eventManager = eventManager;
     m_throw = throwExceptions;
     m_errors = new ArrayDeque<Error>();
@@ -38,8 +40,8 @@ public class ErrorBag
   public void add(YakaException exception, String message)
   {
     Error e = new Error(exception, message,
-        Yaka.token.endLine,
-        Yaka.token.endColumn);
+      m_yaka.token.endLine,
+      m_yaka.token.endColumn);
     m_errors.add(e);
     m_eventManager.emit(Event.Error, e);
 

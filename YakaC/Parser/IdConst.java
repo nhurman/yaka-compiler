@@ -1,4 +1,4 @@
-package YakaC;
+package YakaC.Parser;
 
 public class IdConst extends Ident
 {

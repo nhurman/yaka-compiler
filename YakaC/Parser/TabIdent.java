@@ -1,4 +1,4 @@
-package YakaC;
+package YakaC.Parser;
 
 import YakaC.Exception.*;
 import java.util.Map;

@@ -1,8 +1,11 @@
-package YakaC;
+package YakaC.Target;
 
+import YakaC.javacc.Yaka;
 import YakaC.Event.*;
 import YakaC.Event.Event;
-import YakaC.Expression.Operator;
+import YakaC.Parser.Expression.Operator;
+import YakaC.Parser.Ident;
+import YakaC.Parser.TabIdent;
 import YakaC.Exception.UndefinedIdentException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -12,14 +15,15 @@ public class YVM
   public static final int StackValueSize = 2;
 
   protected PrintWriter m_writer;
-  protected TabIdent m_tabIdent;
   protected boolean m_error;
 
-  public YVM(OutputStream os, final EventManager manager, TabIdent tabIdent)
+
+  public YVM(final Yaka yaka, OutputStream os)
   {
     m_writer = new java.io.PrintWriter(os, true);
-    m_tabIdent = tabIdent;
     m_error = false;
+
+    final EventManager manager = yaka.eventManager();
 
     manager.register(Event.Error, new EventHandler() {
       public void execute(Object params) {
@@ -36,7 +40,8 @@ public class YVM
 
     manager.register(Event.ExpressionsStart, new EventHandler() {
       public void execute(Object params) {
-        m_writer.println("ouvrePrinc " + m_tabIdent.count(Ident.Kind.Variable) * StackValueSize);
+        m_writer.println("ouvrePrinc " + yaka.tabIdent()
+          .count(Ident.Kind.Variable) * StackValueSize);
       }
     }, "YVM");
 
@@ -49,7 +54,7 @@ public class YVM
     manager.register(Event.Identifier, new EventHandler() {
       public void execute(Object params) {
         try {
-          Ident ident = m_tabIdent.find((String)params);
+          Ident ident = yaka.tabIdent().find((String)params);
           if (Ident.Kind.Constant == ident.kind()) {
             m_writer.println("iconst " + ident.value());
           }
