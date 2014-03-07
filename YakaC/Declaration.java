@@ -1,23 +1,24 @@
-package Yaka;
+package YakaC;
 
-import Yaka.Ident.Type;
-import Yaka.Ident.Boolean;
-import Yaka.Exception.RedeclaredIdentException;
-import Yaka.Exception.UndefinedIdentException;
+import YakaC.Ident.Type;
+import YakaC.Ident.Boolean;
+import YakaC.Event.EventManager;
+import YakaC.Exception.RedeclaredIdentException;
+import YakaC.Exception.UndefinedIdentException;
 
 public class Declaration
 {
   protected ErrorBag m_errors;
+  protected EventManager m_eventManager;
   protected TabIdent m_tabIdent;
   protected int m_index;
   protected String m_name;
   protected Type m_type;
 
-  protected static final int StackValueSize = 2;
-
-  public Declaration(ErrorBag errors, TabIdent tabIdent)
+  public Declaration(ErrorBag errors, EventManager eventManager, TabIdent tabIdent)
   {
     m_errors = errors;
+    m_eventManager = eventManager;
     m_tabIdent = tabIdent;
     m_index = 0;
     m_name = null;
@@ -67,7 +68,7 @@ public class Declaration
 
   public void variable(String name) throws RedeclaredIdentException
   {
-    m_index -= StackValueSize;
+    m_index -= YVM.StackValueSize;
     add(name, new IdVar(m_type, m_index));
   }
 
@@ -81,7 +82,7 @@ public class Declaration
 
   public int countVariables()
   {
-    return -(m_index / StackValueSize);
+    return -(m_index / YVM.StackValueSize);
   }
 
   /** General purpose **/

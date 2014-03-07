@@ -1,7 +1,8 @@
-package Yaka;
+package YakaC;
 
-import Yaka.Ident.Type;
-import Yaka.Exception.TypeMismatchException;
+import YakaC.Ident.Type;
+import YakaC.Event.*;
+import YakaC.Exception.TypeMismatchException;
 import java.util.ArrayDeque;
 
 public class Expression
@@ -20,7 +21,9 @@ public class Expression
     Equals,
     NEquals,
     And,
-    Or;
+    Or,
+
+    Neg;
 
     public static final String[] str = {
       "+", "-", "*", "/",
@@ -30,43 +33,43 @@ public class Expression
   };
 
   ErrorBag m_errors;
+  EventManager m_eventManager;
   ArrayDeque<Operator> m_opStack;
   ArrayDeque<Type> m_typeStack;
 
-  public Expression(ErrorBag errors)
+  public Expression(ErrorBag errors, EventManager eventManager)
   {
     m_errors = errors;
+    m_eventManager = eventManager;
     m_opStack = new ArrayDeque<Operator>();
     m_typeStack = new ArrayDeque<Type>();
   }
 
-  public static Type computeType(Type t1, Operator op, Type t2)
+  public static Type computeType(Operation op)
   {
-    if (t1 != t2) {
+    if (op.t1 != op.t2) {
       return Type.Error;
     }
 
-    int o = op.ordinal();
+    int o = op.op.ordinal();
 
     if (Operator.Plus.ordinal() <= o && o <= Operator.Div.ordinal()) {
-      if (Type.Integer == t1) {
+      if (Type.Integer == op.t1) {
         return Type.Integer;
       }
     }
     else if (Operator.Lower.ordinal() <= o && o <= Operator.GreaterE.ordinal()) {
-      if (Type.Integer == t1) {
+      if (Type.Integer == op.t1) {
         return Type.Boolean;
       }
     }
     else if (Operator.Equals.ordinal() <= o && o <= Operator.NEquals.ordinal()) {
-      if (Type.Error != t1) {
+      if (Type.Error != op.t1) {
         return Type.Boolean;
       }
     }
     else if (Operator.And.ordinal() <= o && o <= Operator.Or.ordinal()) {
-      if (Type.Boolean == t1) {
-        return Type.Boolean;
-      }
+      return op.t1;
     }
 
     return Type.Error;
@@ -91,15 +94,18 @@ public class Expression
   {
     Type t2 = m_typeStack.pop();
     Type t1 = m_typeStack.pop();
-    Operator op = m_opStack.pop();
-    Type result = computeType(t1, op, t2);
+    Operator operator = m_opStack.pop();
+    Operation op = new Operation(t1, operator, t2);
+
+    Type result = computeType(op);
 
     if (result == Type.Error
      && Type.Error != t1
      && Type.Error != t2)
-      m_errors.add(new TypeMismatchException(t1, op, t2));
+      m_errors.add(new TypeMismatchException(op));
 
     m_typeStack.push(result);
+    m_eventManager.emit(Event.Operation, operator);
   }
 
   public String toString()

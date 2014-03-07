@@ -1,6 +1,6 @@
-package Yaka;
+package YakaC;
 
-import Yaka.Exception.*;
+import YakaC.Exception.*;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -24,7 +24,7 @@ public class TabIdent
   {
     if (!exists(key)) {
       m_errors.add(new UndefinedIdentException(key));
-      return new Ident(Ident.Type.Error);
+      return new Ident();
     }
 
     return m_idents.get(key);
@@ -41,6 +41,18 @@ public class TabIdent
   public void set(String key, Ident val)
   {
     m_idents.put(key, val);
+  }
+
+  public int count(Ident.Kind kind)
+  {
+    int num = 0;
+    for (Ident ident: m_idents.values()) {
+      if (kind == ident.kind()) {
+        ++num;
+      }
+    }
+
+    return num;
   }
 
   public String toString()

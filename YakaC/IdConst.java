@@ -1,10 +1,11 @@
-package Yaka;
+package YakaC;
 
 public class IdConst extends Ident
 {
   public IdConst(Type type, int value)
   {
     super(type, value);
+    m_kind = Kind.Constant;
   }
 
   public String toString()

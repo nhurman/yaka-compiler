@@ -1,7 +1,9 @@
-package Yaka;
+package YakaC;
 
-import Yaka.Exception.YakaException;
-import Yaka.javacc.Yaka;
+import YakaC.Exception.YakaException;
+import YakaC.Event.Event;
+import YakaC.Event.EventManager;
+import YakaC.javacc.Yaka;
 import java.util.ArrayDeque;
 
 public class ErrorBag
@@ -22,10 +24,14 @@ public class ErrorBag
     }
   }
 
-  ArrayDeque<Error> m_errors;
+  protected EventManager m_eventManager;
+  protected boolean m_throw;
+  protected ArrayDeque<Error> m_errors;
 
-  public ErrorBag()
+  public ErrorBag(EventManager eventManager, boolean throwExceptions)
   {
+    m_eventManager = eventManager;
+    m_throw = throwExceptions;
     m_errors = new ArrayDeque<Error>();
   }
 
@@ -35,14 +41,16 @@ public class ErrorBag
         Yaka.token.endLine,
         Yaka.token.endColumn);
     m_errors.add(e);
+    m_eventManager.emit(Event.Error, e);
+
+    /*if (m_throw) {
+      throw exception;
+    }*/
   }
 
   public void add(YakaException exception)
   {
-    Error e = new Error(exception, exception.toString(),
-        Yaka.token.endLine,
-        Yaka.token.endColumn);
-    m_errors.add(e);
+    add(exception, exception.toString());
   }
 
   public String toString()

@@ -1,6 +1,6 @@
 @echo off
-pushd %~dp0..\Yaka\javacc
-call javacc yaka.jj
+pushd %~dp0..\YakaC\javacc
+call javacc Yaka.jj
 cd ..
-call javac javacc\*.java Exception\*.java *.java
+call javac *.java javacc\*.java Event\*.java Exception\*.java
 popd

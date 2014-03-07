@@ -1,4 +1,4 @@
-package Yaka.Exception;
+package YakaC.Exception;
 
 public class RedeclaredIdentException extends YakaException
 {

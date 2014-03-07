@@ -10,59 +10,71 @@ options{
 
 PARSER_BEGIN(Yaka)
 
-package Yaka.javacc;
+package YakaC.javacc;
 
-import Yaka.*;
-import Yaka.Exception.YakaException;
+import YakaC.*;
+import YakaC.Event.*;
+import YakaC.Exception.YakaException;
 
 public class Yaka {
+  public static EventManager eventManager;
+  public static ErrorBag errors;
+  public static TabIdent tabIdent;
   public static Declaration declaration;
   public static Expression expression;
-  public static TabIdent tabIdent;
-  public static ErrorBag errors;
+  public static YVM yvm;
 
-  public static void init()
+  public static void init(java.io.OutputStream os)
   {
-    errors = new ErrorBag();
+    eventManager = new EventManager();
+    errors = new ErrorBag(eventManager, false);
     tabIdent = new TabIdent(errors, 10);
-    declaration = new Declaration(errors, tabIdent);
-    expression = new Expression(errors);
+    declaration = new Declaration(errors, eventManager, tabIdent);
+    expression = new Expression(errors, eventManager);
+    yvm = new YVM(os, eventManager, tabIdent);
   }
 
   public static void main(String args[])
   {
     Yaka analyseur;
     java.io.InputStream input;
+    String yvmFilename;
 
-    if (args.length == 1) {
-      System.out.print(args[0] + ": ");
+    if (args.length == 2) {
       try {
         input = new java.io.FileInputStream(args[0]);
+        yvmFilename = args[1];
       } catch (java.io.FileNotFoundException e) {
-        System.out.println("Fichier introuvable.");
+        System.err.println("Fichier introuvable.");
         return;
       }
-    } else if (args.length == 0) {
-      System.out.println("Lecture sur l'entree standard...");
+    } else if (args.length == 1) {
+      System.err.println("Lecture sur l'entree standard...");
       input = System.in;
+      yvmFilename = args[0];
     } else {
-      System.out.println("Usage: java " + Yaka.class.getName() + " [fichier]");
+      System.err.println("Usage: java " + Yaka.class.getName() + " [yaka] [yvm]");
       return;
     }
     try {
-      init();
+      java.io.File fp = new java.io.File(yvmFilename);
+      java.io.FileOutputStream os = new java.io.FileOutputStream(fp);
+      init(System.out);
+
       analyseur = new Yaka(input);
       analyseur.analyse();
-      System.out.println("analyse syntaxique reussie!");
-      System.out.println(errors);
-      System.out.println(declaration + "\n");
-      System.out.println(expression);
+      //System.out.println("analyse syntaxique reussie!");
+      System.err.println(errors);
+      //System.out.println(declaration + "\n");
+      //System.out.println(expression);
+    } catch (java.io.FileNotFoundException e) {
+      System.err.println("Impossible d'ouvrir le fichier de sortie.");
     } catch (ParseException e) {
-      //errors.add(Error.Syntax, e.getMessage());
+      errors.add(new YakaC.Exception.ParseException(e.getMessage()));
       //msg = msg.substring(0,msg.indexOf("\n"));
     } catch (YakaException e) {
       //errors.add(Error.Compi, )
-      System.out.println("Erreur de compilation : " + e.toString());
+      System.err.println("Erreur de compilation : " + e.toString());
     }
   }
 }
@@ -138,15 +150,12 @@ TOKEN  :
 {
   < #chiffre : ["0"-"9"] >
 | < entier : (<chiffre>)+ >
-	{ entierLu = Integer.parseInt(image.toString());
-        }
+	{ entierLu = Integer.parseInt(image.toString()); }
 | < #lettre: ["A"-"Z","a"-"z"] >
 | < ident : <lettre> (<lettre> | <chiffre>)* >
-	{identLu =image.toString();
-	}
+	{ identLu = image.toString();	}
 | < chaine : "\"" (~["\""])* "\"" | "'" (~["'"])* "'" >
-	{ chaineLue = image.toString();
-	 }
+	{ chaineLue = image.toString(); }
 }
 
 
@@ -155,20 +164,21 @@ TOKEN  :
 /**************************************/
 void analyse() throws YakaException : {}
 {
-   <PROGRAMME> <ident>
-   bloc()
-   <FPROGRAMME>
+  <PROGRAMME> <ident> { eventManager.emit(Event.ProgramStart, YakaTokenManager.identLu); }
+  bloc()
+  <FPROGRAMME> { eventManager.emit(Event.ProgramEnd); }
 }
 
 void bloc() throws YakaException : {}{
  (declConst())*
  (declVar())*
+ { eventManager.emit(Event.ExpressionsStart); }
    suiteExpr()
 }
 
 void declConst() throws YakaException : {}
 {
-  <CONST>  defConst() ( "," defConst())* ";"
+  <CONST> defConst() ( "," defConst())* ";"
 }
 
 void defConst() throws YakaException : {}
@@ -254,11 +264,22 @@ void primaire () throws YakaException: {}
 
 void valeur () throws YakaException : {}
 {
-   <entier> { expression.push(Ident.Type.Integer); }
- | <ident> { expression.push(tabIdent.find(YakaTokenManager.identLu)); }
- | <VRAI> { expression.push(Ident.Type.Boolean); }
- | <FAUX> { expression.push(Ident.Type.Boolean); }
-
+   <entier> {
+    expression.push(Ident.Type.Integer);
+    eventManager.emit(Event.Integer, new Integer(YakaTokenManager.entierLu));
+   }
+ | <ident> {
+    expression.push(tabIdent.find(YakaTokenManager.identLu));
+    eventManager.emit(Event.Identifier, YakaTokenManager.identLu);
+  }
+ | <VRAI> {
+    expression.push(Ident.Type.Boolean);
+    eventManager.emit(Event.Boolean, new Boolean(true));
+  }
+ | <FAUX> {
+    expression.push(Ident.Type.Boolean);
+    eventManager.emit(Event.Boolean, new Boolean(false));
+ }
 }
 
 void opRel() : {}

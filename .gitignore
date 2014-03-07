@@ -1,4 +1,5 @@
 *.class
+*.sublime-workspace
 
 # Package Files #
 *.jar
@@ -7,3 +8,5 @@
 
 # javacc generated files
 Yaka/javacc
+
+out/

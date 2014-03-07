@@ -1,3 +1,3 @@
-package Yaka.Exception;
+package YakaC.Exception;
 
 public class YakaException extends Exception {}
