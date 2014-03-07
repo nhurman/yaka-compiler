@@ -24,12 +24,6 @@ public class Expression
     Or,
 
     Neg;
-
-    public static final String[] str = {
-      "+", "-", "*", "/",
-      "<", ">", "<=", ">=",
-      "=", "<>", "ET", "OU"
-    };
   };
 
   ErrorBag m_errors;
@@ -112,12 +106,12 @@ public class Expression
   {
     String out = "-- Operators:\n";
     for (Operator op: m_opStack) {
-      out += Operator.str[op.ordinal()] + " ";
+      out += op + " ";
     }
 
     out += "\n-- Types:\n";
     for (Type type: m_typeStack) {
-      out += Type.str[type.ordinal()] + "\n";
+      out += type + "\n";
     }
 
     return out;

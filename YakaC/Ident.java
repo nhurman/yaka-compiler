@@ -6,20 +6,12 @@ public class Ident
     Error,
     Boolean,
     Integer;
-
-    public static final String[] str = {
-      "Error", "Boolean", "Integer"
-    };
   };
 
   public static enum Kind {
     Undefined,
     Constant,
     Variable;
-
-    public static final String[] str = {
-      "Undefined", "Constant", "Variable"
-    };
   };
 
   public static class Boolean {
@@ -27,7 +19,7 @@ public class Ident
     public static final int False = 0;
 
     public static final String[] str = {
-      "VRAI", "FAUX"
+      "True", "False"
     };
   }
 
@@ -66,6 +58,6 @@ public class Ident
 
   public String toString()
   {
-    return Type.str[m_type.ordinal()];
+    return m_type.toString();
   }
 }

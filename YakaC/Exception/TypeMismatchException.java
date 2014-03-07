@@ -15,8 +15,7 @@ public class TypeMismatchException extends YakaException
 
   public String toString()
   {
-    return "Type mismatch: got (" + Type.str[m_op.t1.ordinal()]
-      + " " + Operator.str[m_op.op.ordinal()]
-      + " " + Type.str[m_op.t2.ordinal()] + ")";
+    return "Type mismatch: got (" + m_op.t1
+      + " " + m_op.op + " " + m_op.t2 + ")";
   }
 }

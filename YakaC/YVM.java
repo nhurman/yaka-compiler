@@ -2,6 +2,7 @@ package YakaC;
 
 import YakaC.Event.*;
 import YakaC.Event.Event;
+import YakaC.Expression.Operator;
 import YakaC.Exception.UndefinedIdentException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -74,47 +75,47 @@ public class YVM
 
     manager.register(Event.Operation, new EventHandler() {
       public void execute(Object params) {
-        Expression.Operator op = (Expression.Operator)params;
-        if (Expression.Operator.Plus == op) {
+        Operator op = (Operator)params;
+        if (Operator.Plus == op) {
           m_writer.println("iadd");
         }
-        else if (Expression.Operator.Minus == op) {
+        else if (Operator.Minus == op) {
           m_writer.println("isub");
         }
-        else if (Expression.Operator.Times == op) {
+        else if (Operator.Times == op) {
           m_writer.println("imul");
         }
-        else if (Expression.Operator.Div == op) {
+        else if (Operator.Div == op) {
           m_writer.println("idiv");
         }
 
-        else if (Expression.Operator.Lower == op) {
+        else if (Operator.Lower == op) {
           m_writer.println("iinf");
         }
-        else if (Expression.Operator.Greater == op) {
+        else if (Operator.Greater == op) {
           m_writer.println("isup");
         }
-        else if (Expression.Operator.LowerE == op) {
+        else if (Operator.LowerE == op) {
           m_writer.println("iinfegal");
         }
-        else if (Expression.Operator.GreaterE == op) {
+        else if (Operator.GreaterE == op) {
           m_writer.println("isupegal");
         }
 
-        else if (Expression.Operator.Equals == op) {
+        else if (Operator.Equals == op) {
           m_writer.println("iegal");
         }
-        else if (Expression.Operator.NEquals == op) {
+        else if (Operator.NEquals == op) {
           m_writer.println("idiff");
         }
-        else if (Expression.Operator.And == op) {
+        else if (Operator.And == op) {
           m_writer.println("iand");
         }
-        else if (Expression.Operator.Or == op) {
+        else if (Operator.Or == op) {
           m_writer.println("ior");
         }
 
-        else if (Expression.Operator.Neg == op) {
+        else if (Operator.Neg == op) {
           m_writer.println("ineg");
         }
 

@@ -7,6 +7,6 @@
 *.ear
 
 # javacc generated files
-Yaka/javacc
+YakaC/javacc/*.java
 
 out/
