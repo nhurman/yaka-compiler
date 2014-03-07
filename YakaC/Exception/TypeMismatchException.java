@@ -1,21 +1,32 @@
 package YakaC.Exception;
 
-import YakaC.Operation;
 import YakaC.Ident.Type;
 import YakaC.Expression.Operator;
 
 public class TypeMismatchException extends YakaException
 {
-  protected Operation m_op;
+  protected Operator m_op;
+  protected Type m_t1;
+  protected Type m_t2;
 
-  public TypeMismatchException(Operation op)
+  public TypeMismatchException(Operator op, Type t1, Type t2)
   {
     m_op = op;
+    m_t1 = t1;
+    m_t2 = t2;
   }
 
   public String toString()
   {
-    return "Type mismatch: got (" + m_op.t1
-      + " " + m_op.op + " " + m_op.t2 + ")";
+    String out = "Type mismatch: got (";
+
+    if (m_op.unary()) {
+      out += m_op + " " + m_t1;
+    }
+    else {
+      out += m_t1 + " " + m_op + " " + m_t2;
+    }
+
+    return out + ")";
   }
 }

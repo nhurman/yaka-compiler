@@ -50,34 +50,54 @@ public class Expression
     m_typeStack = new ArrayDeque<Type>();
   }
 
-  public static Type computeType(Operation op)
+  protected static Type computeType(Operator op, Type t1, Type t2)
   {
-    if (op.t1 != op.t2) {
-      return Type.Error;
+    if (op.unary()) {
+      if (Operator.Negate == op) {
+        return t1;
+      }
     }
+    else {
+      int o = op.ordinal();
 
-    int o = op.op.ordinal();
-
-    if (Operator.Plus.ordinal() <= o && o <= Operator.Div.ordinal()) {
-      if (Type.Integer == op.t1) {
-        return Type.Integer;
+      if (Operator.Plus.ordinal() <= o && o <= Operator.Div.ordinal()) {
+        if (Type.Integer == t1) {
+          return Type.Integer;
+        }
       }
-    }
-    else if (Operator.Lower.ordinal() <= o && o <= Operator.GreaterE.ordinal()) {
-      if (Type.Integer == op.t1) {
-        return Type.Boolean;
+      else if (Operator.Lower.ordinal() <= o && o <= Operator.GreaterE.ordinal()) {
+        if (Type.Integer == t1) {
+          return Type.Boolean;
+        }
       }
-    }
-    else if (Operator.Equals.ordinal() <= o && o <= Operator.NEquals.ordinal()) {
-      if (Type.Error != op.t1) {
-        return Type.Boolean;
+      else if (Operator.Equals.ordinal() <= o && o <= Operator.NEquals.ordinal()) {
+        if (Type.Error != t1) {
+          return Type.Boolean;
+        }
       }
-    }
-    else if (Operator.And.ordinal() <= o && o <= Operator.Or.ordinal()) {
-      return op.t1;
+      else if (Operator.And.ordinal() <= o && o <= Operator.Or.ordinal()) {
+        return t1;
+      }
     }
 
     return Type.Error;
+  }
+
+  protected void checkType(Operator op)
+  {
+    Type t1, t2 = null, result;
+
+    if (!op.unary()) {
+      t2 = m_typeStack.pop();
+    }
+
+    t1 = m_typeStack.pop();
+    result = computeType(op, t1, t2);
+    m_typeStack.push(result);
+
+    if (Type.Error == result && Type.Error != t1 && Type.Error != t2) {
+      m_errors.add(new TypeMismatchException(op, t1, t2));
+    }
   }
 
   public void push(Operator op)
@@ -98,29 +118,7 @@ public class Expression
   public void operation() throws TypeMismatchException
   {
     Operator operator = m_opStack.pop();
-    Type t1, t2, result;
-    Operation op;
-
-    if (operator.unary()) {
-      t1 = m_typeStack.pop();
-      t2 = t1;
-      result = t1;
-      op = new Operation(t1, operator, t2);
-    }
-    else {
-      t2 = m_typeStack.pop();
-      t1 = m_typeStack.pop();
-
-      op = new Operation(t1, operator, t2);
-      result = computeType(op);
-    }
-
-    if (result == Type.Error
-     && Type.Error != t1
-     && Type.Error != t2)
-      m_errors.add(new TypeMismatchException(op));
-
-    m_typeStack.push(result);
+    checkType(operator);
     m_eventManager.emit(Event.Operation, operator);
   }
 
