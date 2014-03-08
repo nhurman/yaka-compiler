@@ -27,6 +27,18 @@ public class Tasm extends Writer
 
     manager.register(YVM.Event.Header, new EventHandler() {
       public void execute(Object params) {
+        String[] functions = {
+          "lirent",
+          "ecrch",
+          "ecrent",
+          "ecrbool",
+          "ligsuiv"
+        };
+
+        for (String function: functions) {
+          write("extrn " + function + ":proc");
+        }
+
         write(".model SMALL");
         write(".586");
         write(".CODE");
