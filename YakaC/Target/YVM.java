@@ -34,6 +34,11 @@ public class YVM
     IAnd,
     IOr,
     INeg,
+    ReadInteger,
+    WriteBoolean,
+    WriteInteger,
+    WriteString,
+    NewLine,
     Footer;
   }
 
@@ -42,7 +47,7 @@ public class YVM
 
   public YVM(final Yaka yaka, OutputStream os)
   {
-    m_writer = new java.io.PrintWriter(os, false);
+    m_writer = new java.io.PrintWriter(os, true);
     m_error = false;
 
     final EventManager manager = yaka.eventManager();
@@ -175,6 +180,42 @@ public class YVM
         else {
           throw new RuntimeException("Unimplemented operator: " + op);
         }
+      }
+    }, "YVM");
+
+
+    manager.register(YakaC.Parser.EntreeSortie.Event.Read, new EventHandler() {
+      public void execute(Object params) {
+        m_writer.println("lireEnt " + params);
+        manager.emit(Event.ReadInteger, params);
+      }
+    }, "YVM");
+
+    manager.register(YakaC.Parser.EntreeSortie.Event.WriteBoolean, new EventHandler() {
+      public void execute(Object params) {
+        m_writer.println("ecrireBool");
+        manager.emit(Event.WriteBoolean);
+      }
+    }, "YVM");
+
+    manager.register(YakaC.Parser.EntreeSortie.Event.WriteInteger, new EventHandler() {
+      public void execute(Object params) {
+        m_writer.println("ecrireEnt");
+        manager.emit(Event.WriteInteger);
+      }
+    }, "YVM");
+
+    manager.register(YakaC.Parser.EntreeSortie.Event.WriteString, new EventHandler() {
+      public void execute(Object params) {
+        m_writer.println("ecrireChaine " + params);
+        manager.emit(Event.WriteString, params);
+      }
+    }, "YVM");
+
+    manager.register(YakaC.Parser.EntreeSortie.Event.NewLine, new EventHandler() {
+      public void execute(Object params) {
+        m_writer.println("aLaLigne");
+        manager.emit(Event.NewLine, params);
       }
     }, "YVM");
 

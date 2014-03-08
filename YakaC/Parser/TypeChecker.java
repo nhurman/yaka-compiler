@@ -84,6 +84,11 @@ public class TypeChecker
     m_opStack.push(op);
   }
 
+  public Type lastType()
+  {
+    return m_typeStack.peek();
+  }
+
   public String toString()
   {
     String out = "-- Operators:\n";

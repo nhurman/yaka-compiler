@@ -27,6 +27,7 @@ public class Yaka
   protected Declaration m_declaration;
   protected Expression m_expression;
   protected Affectation m_affectation;
+  protected EntreeSortie m_entreeSortie;
 
   public static enum Event implements YakaC.Event.Event
   {
@@ -49,6 +50,7 @@ public class Yaka
     m_declaration = new Declaration(m_errors, m_eventManager, m_tabIdent);
     m_expression = new Expression(m_errors, m_eventManager, m_typeChecker);
     m_affectation = new Affectation(m_errors, m_eventManager, m_tabIdent, m_typeChecker);
+    m_entreeSortie = new EntreeSortie(m_errors, m_eventManager, m_tabIdent, m_typeChecker);
   }
 
   public YakaC.Event.EventManager eventManager()
@@ -217,12 +219,19 @@ void affectation() throws YakaException : {}
 }
 
 void lecture() throws YakaException : {}
-{ <LIRE> "(" <ident> ")" }
+{
+  <LIRE> "(" <ident> ")"
+  { m_entreeSortie.read(token_source.identLu); }
+}
 
 void ecriture() throws YakaException : {}
 {
-  <ECRIRE> "(" (expression() | <chaine>) ")"
-| <ALALIGNE>
+  <ECRIRE> "("
+  (
+    expression() { m_entreeSortie.write(); }
+  | <chaine>     { m_entreeSortie.write(token_source.chaineLue); }
+  ) ")"
+| <ALALIGNE>     { m_entreeSortie.newLine(); }
 }
 
 /*
