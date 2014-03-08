@@ -9,7 +9,7 @@ import YakaC.Exception.UndefinedIdentException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 
-public class YVM
+public class YVM extends Writer
 {
   public static final int StackValueSize = 2;
 
@@ -42,26 +42,21 @@ public class YVM
     Footer;
   }
 
-  protected PrintWriter m_writer;
-  protected boolean m_error;
-
   public YVM(final Yaka yaka, OutputStream os)
   {
-    m_writer = new java.io.PrintWriter(os, false);
-    m_error = false;
-
+    super(yaka, os);
     final EventManager manager = yaka.eventManager();
 
     manager.register(YakaC.Parser.ErrorBag.Event.Error, new EventHandler() {
       public void execute(Object params) {
         manager.unregister("YVM");
-        m_writer.println("Stopping YVM code generation due to error");
+        write("Stopping YVM code generation due to error");
       }
     }, "YVM");
 
     manager.register(Yaka.Event.ProgramStart, new EventHandler() {
       public void execute(Object params) {
-        m_writer.println("entete");
+        write("entete");
         manager.emit(Event.Header, params);
       }
     }, "YVM");
@@ -69,21 +64,21 @@ public class YVM
     manager.register(Yaka.Event.InstructionsStart, new EventHandler() {
       public void execute(Object params) {
         int size = yaka.tabIdent().count(Ident.Kind.Variable) * StackValueSize;
-        m_writer.println("ouvrePrinc " + size);
+        write("ouvrePrinc " + size);
         manager.emit(Event.StackDefinition, new Integer(size));
       }
     }, "YVM");
 
     manager.register(Yaka.Event.Integer, new EventHandler() {
       public void execute(Object params) {
-        m_writer.println("iconst " + params);
+        write("iconst " + params);
         manager.emit(Event.IConst, params);
       }
     }, "YVM");
 
     manager.register(YakaC.Parser.Affectation.Event.Affectation, new EventHandler() {
       public void execute(Object params) {
-        m_writer.println("istore " + params);
+        write("istore " + params);
         manager.emit(Event.IStore, params);
       }
     }, "YVM");
@@ -93,11 +88,11 @@ public class YVM
         try {
           Ident ident = yaka.tabIdent().find((String)params);
           if (Ident.Kind.Constant == ident.kind()) {
-            m_writer.println("iconst " + ident.value());
+            write("iconst " + ident.value());
             manager.emit(Event.IConst, new Integer(ident.value()));
           }
           else if (Ident.Kind.Variable == ident.kind()) {
-            m_writer.println("iload " + ident.value());
+            write("iload " + ident.value());
             manager.emit(Event.ILoad, new Integer(ident.value()));
           }
           else {
@@ -113,7 +108,7 @@ public class YVM
       public void execute(Object params) {
         Boolean b = (Boolean)params;
         int value = b ? Ident.Boolean.True : Ident.Boolean.False;
-        m_writer.println("iconst " + value);
+        write("iconst " + value);
         manager.emit(Event.IConst, new Integer(value));
       }
     }, "YVM");
@@ -122,58 +117,58 @@ public class YVM
       public void execute(Object params) {
         Operator op = (Operator)params;
         if (Operator.Plus == op) {
-          m_writer.println("iadd");
+          write("iadd");
           manager.emit(Event.IAdd);
         }
         else if (Operator.Minus == op) {
-          m_writer.println("isub");
+          write("isub");
           manager.emit(Event.ISub);
         }
         else if (Operator.Times == op) {
-          m_writer.println("imul");
+          write("imul");
           manager.emit(Event.IMul);
         }
         else if (Operator.Div == op) {
-          m_writer.println("idiv");
+          write("idiv");
           manager.emit(Event.IDiv);
         }
 
         else if (Operator.Lower == op) {
-          m_writer.println("iinf");
+          write("iinf");
           manager.emit(Event.IInf);
         }
         else if (Operator.Greater == op) {
-          m_writer.println("isup");
+          write("isup");
           manager.emit(Event.ISup);
         }
         else if (Operator.LowerE == op) {
-          m_writer.println("iinfegal");
+          write("iinfegal");
           manager.emit(Event.IInfEgal);
         }
         else if (Operator.GreaterE == op) {
-          m_writer.println("isupegal");
+          write("isupegal");
           manager.emit(Event.ISupEgal);
         }
 
         else if (Operator.Equals == op) {
-          m_writer.println("iegal");
+          write("iegal");
           manager.emit(Event.IEgal);
         }
         else if (Operator.NEquals == op) {
-          m_writer.println("idiff");
+          write("idiff");
           manager.emit(Event.IDiff);
         }
         else if (Operator.And == op) {
-          m_writer.println("iand");
+          write("iand");
           manager.emit(Event.IAnd);
         }
         else if (Operator.Or == op) {
-          m_writer.println("ior");
+          write("ior");
           manager.emit(Event.IOr);
         }
 
         else if (Operator.Negate == op) {
-          m_writer.println("ineg");
+          write("ineg");
           manager.emit(Event.INeg);
         }
 
@@ -186,44 +181,49 @@ public class YVM
 
     manager.register(YakaC.Parser.EntreeSortie.Event.Read, new EventHandler() {
       public void execute(Object params) {
-        m_writer.println("lireEnt " + params);
+        write("lireEnt " + params);
         manager.emit(Event.ReadInteger, params);
       }
     }, "YVM");
 
     manager.register(YakaC.Parser.EntreeSortie.Event.WriteBoolean, new EventHandler() {
       public void execute(Object params) {
-        m_writer.println("ecrireBool");
+        write("ecrireBool");
         manager.emit(Event.WriteBoolean);
       }
     }, "YVM");
 
     manager.register(YakaC.Parser.EntreeSortie.Event.WriteInteger, new EventHandler() {
       public void execute(Object params) {
-        m_writer.println("ecrireEnt");
+        write("ecrireEnt");
         manager.emit(Event.WriteInteger);
       }
     }, "YVM");
 
     manager.register(YakaC.Parser.EntreeSortie.Event.WriteString, new EventHandler() {
       public void execute(Object params) {
-        m_writer.println("ecrireChaine " + params);
+        write("ecrireChaine " + params);
         manager.emit(Event.WriteString, params);
       }
     }, "YVM");
 
     manager.register(YakaC.Parser.EntreeSortie.Event.NewLine, new EventHandler() {
       public void execute(Object params) {
-        m_writer.println("aLaLigne");
+        write("aLaLigne");
         manager.emit(Event.NewLine, params);
       }
     }, "YVM");
 
     manager.register(Yaka.Event.ProgramEnd, new EventHandler() {
       public void execute(Object params) {
-        m_writer.println("queue");
+        write("queue");
         manager.emit(Event.Footer);
       }
     }, "YVM");
+  }
+
+  protected void write(String str)
+  {
+    super.write("; " + str);
   }
 }
