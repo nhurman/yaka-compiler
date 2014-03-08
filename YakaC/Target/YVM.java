@@ -19,6 +19,7 @@ public class YVM
     StackDefinition,
     IConst,
     ILoad,
+    IStore,
     IAdd,
     ISub,
     IMul,
@@ -60,7 +61,7 @@ public class YVM
       }
     }, "YVM");
 
-    manager.register(Yaka.Event.ExpressionsStart, new EventHandler() {
+    manager.register(Yaka.Event.InstructionsStart, new EventHandler() {
       public void execute(Object params) {
         int size = yaka.tabIdent().count(Ident.Kind.Variable) * StackValueSize;
         m_writer.println("ouvrePrinc " + size);
@@ -72,6 +73,13 @@ public class YVM
       public void execute(Object params) {
         m_writer.println("iconst " + params);
         manager.emit(Event.IConst, params);
+      }
+    }, "YVM");
+
+    manager.register(YakaC.Parser.Affectation.Event.Affectation, new EventHandler() {
+      public void execute(Object params) {
+        m_writer.println("istore " + params);
+        manager.emit(Event.IStore, params);
       }
     }, "YVM");
 

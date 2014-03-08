@@ -2,23 +2,18 @@ package YakaC.Target;
 
 import YakaC.javacc.Yaka;
 import YakaC.Event.*;
-import YakaC.Event.Event;
-import YakaC.Parser.Expression.Operator;
-import YakaC.Parser.Ident;
-import YakaC.Parser.TabIdent;
 import YakaC.Target.YVM;
-import YakaC.Exception.UndefinedIdentException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 
-public class ASM
+public class Tasm
 {
   public static final int StackValueSize = 2;
 
   protected PrintWriter m_writer;
   protected boolean m_error;
 
-  public ASM(final Yaka yaka, OutputStream os)
+  public Tasm(final Yaka yaka, OutputStream os)
   {
     m_writer = new java.io.PrintWriter(os, true);
     m_error = false;
@@ -52,7 +47,13 @@ public class ASM
 
     manager.register(YVM.Event.ILoad, new EventHandler() {
       public void execute(Object params) {
-        m_writer.println("pop ax\nmov word ptr[bp" + params + "], ax");
+        m_writer.println("push word ptr [bp" + params + "]");
+      }
+    }, "ASM");
+
+    manager.register(YVM.Event.IStore, new EventHandler() {
+      public void execute(Object params) {
+        m_writer.println("pop ax\nmov word ptr [bp" + params + "], ax");
       }
     }, "ASM");
 

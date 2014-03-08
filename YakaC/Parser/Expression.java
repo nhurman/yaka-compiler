@@ -13,6 +13,8 @@ public class Expression
   }
 
   public static enum Operator {
+    Assign,
+
     Plus,
     Minus,
     Times,
@@ -42,103 +44,40 @@ public class Expression
     }
   };
 
-  ErrorBag m_errors;
-  EventManager m_eventManager;
-  ArrayDeque<Operator> m_opStack;
-  ArrayDeque<Type> m_typeStack;
+  protected ErrorBag m_errors;
+  protected EventManager m_eventManager;
+  protected TypeChecker m_typeChecker;
 
-  public Expression(ErrorBag errors, EventManager eventManager)
+  public Expression(ErrorBag errors, EventManager eventManager, TypeChecker typeChecker)
   {
     m_errors = errors;
     m_eventManager = eventManager;
-    m_opStack = new ArrayDeque<Operator>();
-    m_typeStack = new ArrayDeque<Type>();
-  }
-
-  protected static Type computeType(Operator op, Type t1, Type t2)
-  {
-    if (op.unary()) {
-      if (Operator.Negate == op) {
-        return t1;
-      }
-    }
-    else {
-      int o = op.ordinal();
-
-      if (Operator.Plus.ordinal() <= o && o <= Operator.Div.ordinal()) {
-        if (Type.Integer == t1) {
-          return Type.Integer;
-        }
-      }
-      else if (Operator.Lower.ordinal() <= o && o <= Operator.GreaterE.ordinal()) {
-        if (Type.Integer == t1) {
-          return Type.Boolean;
-        }
-      }
-      else if (Operator.Equals.ordinal() <= o && o <= Operator.NEquals.ordinal()) {
-        if (Type.Error != t1) {
-          return Type.Boolean;
-        }
-      }
-      else if (Operator.And.ordinal() <= o && o <= Operator.Or.ordinal()) {
-        return t1;
-      }
-    }
-
-    return Type.Error;
-  }
-
-  protected void checkType(Operator op)
-  {
-    Type t1, t2 = null, result;
-
-    if (!op.unary()) {
-      t2 = m_typeStack.pop();
-    }
-
-    t1 = m_typeStack.pop();
-    result = computeType(op, t1, t2);
-    m_typeStack.push(result);
-
-    if (Type.Error == result && Type.Error != t1 && Type.Error != t2) {
-      m_errors.add(new TypeMismatchException(op, t1, t2));
-    }
+    m_typeChecker = typeChecker;
   }
 
   public void push(Operator op)
   {
-    m_opStack.push(op);
-  }
-
-  public void push(Ident ident)
-  {
-    m_typeStack.push(ident.type());
+    m_typeChecker.push(op);
   }
 
   public void push(Type type)
   {
-    m_typeStack.push(type);
+    m_typeChecker.push(type);
+  }
+
+  public void push(Ident ident)
+  {
+    push(ident.type());
   }
 
   public void operation() throws TypeMismatchException
   {
-    Operator operator = m_opStack.pop();
-    checkType(operator);
+    Operator operator = m_typeChecker.check();
     m_eventManager.emit(Event.Operation, operator);
   }
 
   public String toString()
   {
-    String out = "-- Operators:\n";
-    for (Operator op: m_opStack) {
-      out += op + " ";
-    }
-
-    out += "\n-- Types:\n";
-    for (Type type: m_typeStack) {
-      out += type + "\n";
-    }
-
-    return out;
+    return m_typeChecker.toString();
   }
 }

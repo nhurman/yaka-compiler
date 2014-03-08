@@ -5,7 +5,7 @@
  */
 
 options{
-	JDK_VERSION="1.5";
+  JDK_VERSION="1.5";
   STATIC=false;
 }
 
@@ -18,18 +18,21 @@ import YakaC.Parser.*;
 import YakaC.Target.*;
 import YakaC.Exception.YakaException;
 
-public class Yaka {
+public class Yaka
+{
   protected YakaC.Event.EventManager m_eventManager;
   protected ErrorBag m_errors;
   protected TabIdent m_tabIdent;
+  protected TypeChecker m_typeChecker;
   protected Declaration m_declaration;
   protected Expression m_expression;
+  protected Affectation m_affectation;
 
   public static enum Event implements YakaC.Event.Event
   {
     ProgramStart,
     ProgramEnd,
-    ExpressionsStart,
+    InstructionsStart,
     Operation,
 
     Integer,
@@ -42,8 +45,10 @@ public class Yaka {
     m_eventManager = new YakaC.Event.EventManager();
     m_errors = new ErrorBag(this, m_eventManager, false);
     m_tabIdent = new TabIdent(m_errors, 10);
+    m_typeChecker = new TypeChecker(m_errors);
     m_declaration = new Declaration(m_errors, m_eventManager, m_tabIdent);
-    m_expression = new Expression(m_errors, m_eventManager);
+    m_expression = new Expression(m_errors, m_eventManager, m_typeChecker);
+    m_affectation = new Affectation(m_errors, m_eventManager, m_tabIdent, m_typeChecker);
   }
 
   public YakaC.Event.EventManager eventManager()
@@ -96,17 +101,17 @@ SKIP :
 /* Mots réservés*/
 TOKEN :
 {
-  < BOOLEEN: "BOOLEEN" >
-| < VAR: "VAR" >
-| < FAIRE: "FAIRE" >
-| < SINON: "SINON" >
-| < POUR: "POUR" >
-| < SI: "SI" >
-| < FSI: "FSI">
-| < ENTIER: "ENTIER" >
-| < RETOURNE: "RETOURNE" >
-| < VRAI: "VRAI" >
-| < TANTQUE: "TANTQUE" >
+  <BOOLEEN: "BOOLEEN">
+| <VAR: "VAR">
+| <FAIRE: "FAIRE">
+| <SINON: "SINON">
+| <POUR: "POUR">
+| <SI: "SI">
+| <FSI: "FSI">
+| <ENTIER: "ENTIER">
+| <RETOURNE: "RETOURNE">
+| <VRAI: "VRAI">
+| <TANTQUE: "TANTQUE">
 | <CONST : "CONST">
 | <FAUX : "FAUX">
 | <FAIT : "FAIT">
@@ -133,12 +138,12 @@ TOKEN  :
 {
   < #chiffre : ["0"-"9"] >
 | < entier : (<chiffre>)+ >
-	{ entierLu = Integer.parseInt(image.toString()); }
+  { entierLu = Integer.parseInt(image.toString()); }
 | < #lettre: ["A"-"Z","a"-"z"] >
 | < ident : <lettre> (<lettre> | <chiffre>)* >
-	{ identLu = image.toString();	}
+  { identLu = image.toString(); }
 | < chaine : "\"" (~["\""])* "\"" | "'" (~["'"])* "'" >
-	{ chaineLue = image.toString(); }
+  { chaineLue = image.toString(); }
 }
 
 
@@ -155,8 +160,8 @@ void analyse() throws YakaException : {}
 void bloc() throws YakaException : {}{
  (declConst())*
  (declVar())*
- { m_eventManager.emit(Event.ExpressionsStart); }
-   suiteExpr()
+ { m_eventManager.emit(Event.InstructionsStart); }
+   suiteInstr()
 }
 
 void declConst() throws YakaException : {}
@@ -198,9 +203,27 @@ void type() : {}
 /*
  * Syntaxe des instructions.
  */
-void suiteExpr() throws YakaException : {}
-{ (expression() (";" (expression())? )*)? }
+void suiteInstr() throws YakaException : {}
+{ (instruction() (";" (instruction())? )*)? }
 
+
+void instruction() throws YakaException : {}
+{ affectation() | lecture() | ecriture() }
+
+void affectation() throws YakaException : {}
+{ <ident> { m_affectation.assign(token_source.identLu); }
+  "="
+  expression() { m_affectation.assign(); }
+}
+
+void lecture() throws YakaException : {}
+{ <LIRE> "(" <ident> ")" }
+
+void ecriture() throws YakaException : {}
+{
+  <ECRIRE> "(" (expression() | <chaine>) ")"
+| <ALALIGNE>
+}
 
 /*
  * Expression.
@@ -247,22 +270,26 @@ void primaire () throws YakaException: {}
 
 void valeur () throws YakaException : {}
 {
-   <entier> {
-    m_expression.push(Ident.Type.Integer);
+  <entier>
+  {
+   m_expression.push(Ident.Type.Integer);
    m_eventManager.emit(Event.Integer, new Integer(token_source.entierLu));
-   }
- | <ident> {
-    m_expression.push(m_tabIdent.find(token_source.identLu));
+  }
+| <ident>
+  {
+   m_expression.push(m_tabIdent.find(token_source.identLu));
    m_eventManager.emit(Event.Identifier, token_source.identLu);
   }
- | <VRAI> {
-    m_expression.push(Ident.Type.Boolean);
+| <VRAI>
+  {
+   m_expression.push(Ident.Type.Boolean);
    m_eventManager.emit(Event.Boolean, new Boolean(true));
   }
- | <FAUX> {
-    m_expression.push(Ident.Type.Boolean);
+| <FAUX>
+  {
+   m_expression.push(Ident.Type.Boolean);
    m_eventManager.emit(Event.Boolean, new Boolean(false));
- }
+  }
 }
 
 void opRel() : {}
