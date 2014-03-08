@@ -47,7 +47,7 @@ public class YVM
 
   public YVM(final Yaka yaka, OutputStream os)
   {
-    m_writer = new java.io.PrintWriter(os, true);
+    m_writer = new java.io.PrintWriter(os, false);
     m_error = false;
 
     final EventManager manager = yaka.eventManager();

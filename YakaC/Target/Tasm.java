@@ -12,11 +12,13 @@ public class Tasm
 
   protected PrintWriter m_writer;
   protected boolean m_error;
+  protected int m_strIndex;
 
   public Tasm(final Yaka yaka, OutputStream os)
   {
-    m_writer = new java.io.PrintWriter(os, false);
+    m_writer = new java.io.PrintWriter(os, true);
     m_error = false;
+    m_strIndex = 0;
 
     final EventManager manager = yaka.eventManager();
 
@@ -136,10 +138,44 @@ public class Tasm
       }
     }, "ASM");
 
+
+
+    manager.register(YVM.Event.ReadInteger, new EventHandler() {
+      public void execute(Object params) {
+        m_writer.println("lea dx, [bp" + params + "]\npush dx\ncall lirent");
+      }
+    }, "ASM");
+
+    manager.register(YVM.Event.WriteBoolean, new EventHandler() {
+      public void execute(Object params) {
+        m_writer.println("call ecrbool");
+      }
+    }, "ASM");
+
+    manager.register(YVM.Event.WriteInteger, new EventHandler() {
+      public void execute(Object params) {
+        m_writer.println("call ecrent");
+      }
+    }, "ASM");
+
+    manager.register(YVM.Event.WriteString, new EventHandler() {
+      public void execute(Object params) {
+        String str = (String)params;
+        String id = "mess" + nextStr();
+        m_writer.println(".DATA\n" + id + " DB " + str);
+        m_writer.println(".CODE\nlea dx, " + id + "\npush dx\ncall ecrch");
+      }
+    }, "ASM");
+
     manager.register(YVM.Event.Footer, new EventHandler() {
       public void execute(Object params) {
         m_writer.println("nop\nEXITCODE\nEND debut");
       }
     }, "ASM");
+  }
+
+  protected int nextStr()
+  {
+    return m_strIndex++;
   }
 }
