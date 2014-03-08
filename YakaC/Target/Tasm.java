@@ -218,7 +218,9 @@ public class Tasm extends Writer
     manager.register(YVM.Event.WriteString, new EventHandler() {
       public void execute(Object params) {
         String str = (String)params;
+        str = str.substring(0, str.length() - 1) + "$\"";
         String id = "mess" + nextStr();
+
         write(0, ".DATA");
         write(1, "" + id + " DB " + str);
         write(0 , ".CODE");
