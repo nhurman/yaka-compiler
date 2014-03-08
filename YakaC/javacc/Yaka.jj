@@ -21,13 +21,14 @@ import YakaC.Exception.YakaException;
 public class Yaka
 {
   protected YakaC.Event.EventManager m_eventManager;
-  protected ErrorBag m_errors;
-  protected TabIdent m_tabIdent;
-  protected TypeChecker m_typeChecker;
-  protected Declaration m_declaration;
-  protected Expression m_expression;
-  protected Affectation m_affectation;
+  protected ErrorBag     m_errors;
+  protected TabIdent     m_tabIdent;
+  protected TypeChecker  m_typeChecker;
+  protected Declaration  m_declaration;
+  protected Expression   m_expression;
+  protected Affectation  m_affectation;
   protected EntreeSortie m_entreeSortie;
+  protected Iteration    m_iteration;
 
   public static enum Event implements YakaC.Event.Event
   {
@@ -51,6 +52,7 @@ public class Yaka
     m_expression = new Expression(m_errors, m_eventManager, m_typeChecker);
     m_affectation = new Affectation(m_errors, m_eventManager, m_tabIdent, m_typeChecker);
     m_entreeSortie = new EntreeSortie(m_errors, m_eventManager, m_tabIdent, m_typeChecker);
+    m_iteration = new Iteration(m_errors, m_eventManager, m_typeChecker);
   }
 
   public YakaC.Event.EventManager eventManager()
@@ -210,10 +212,16 @@ void suiteInstr() throws YakaException : {}
 
 
 void instruction() throws YakaException : {}
-{ affectation() | lecture() | ecriture() }
+{
+  affectation()
+| lecture()
+| ecriture()
+| iteration()
+}
 
 void affectation() throws YakaException : {}
-{ <ident> { m_affectation.assign(token_source.identLu); }
+{
+  <ident> { m_affectation.assign(token_source.identLu); }
   "="
   expression() { m_affectation.assign(); }
 }
@@ -232,6 +240,15 @@ void ecriture() throws YakaException : {}
   | <chaine>     { m_entreeSortie.write(token_source.chaineLue); }
   ) ")"
 | <ALALIGNE>     { m_entreeSortie.newLine(); }
+}
+
+void iteration() throws YakaException : {}
+{
+  <TANTQUE>      { m_iteration.beginFor(); }
+    expression() { m_iteration.condition(); }
+  <FAIRE>
+    suiteInstr()
+  <FAIT>         { m_iteration.endFor(); }
 }
 
 /*

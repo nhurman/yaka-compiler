@@ -39,6 +39,9 @@ public class YVM extends Writer
     WriteInteger,
     WriteString,
     NewLine,
+    Label,
+    JumpFalse,
+    Jump,
     Footer;
   }
 
@@ -211,6 +214,35 @@ public class YVM extends Writer
       public void execute(Object params) {
         write("aLaLigne");
         manager.emit(Event.NewLine, params);
+      }
+    }, "YVM");
+
+    // Iteration
+    manager.register(YakaC.Parser.Iteration.Event.BeginFor, new EventHandler() {
+      public void execute(Object params) {
+        String label = "FAIRE" + params;
+        write(label + ":");
+        manager.emit(Event.Label, label);
+      }
+    }, "YVM");
+
+    manager.register(YakaC.Parser.Iteration.Event.Condition, new EventHandler() {
+      public void execute(Object params) {
+        String label = "FAIT" + params;
+        write("iffaux " + label);
+        manager.emit(Event.JumpFalse, label);
+      }
+    }, "YVM");
+
+    manager.register(YakaC.Parser.Iteration.Event.EndFor, new EventHandler() {
+      public void execute(Object params) {
+        String label = "FAIRE" + params;
+        write("goto " + label);
+        manager.emit(Event.Jump, label);
+
+        label = "FAIT" + params;
+        write(label + ":");
+        manager.emit(Event.Label, label);
       }
     }, "YVM");
 
