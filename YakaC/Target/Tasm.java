@@ -167,6 +167,12 @@ public class Tasm
       }
     }, "ASM");
 
+    manager.register(YVM.Event.NewLine, new EventHandler() {
+      public void execute(Object params) {
+        m_writer.println("call ligsuiv");
+      }
+    }, "ASM");
+
     manager.register(YVM.Event.Footer, new EventHandler() {
       public void execute(Object params) {
         m_writer.println("nop\nEXITCODE\nEND debut");
