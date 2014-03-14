@@ -9,4 +9,4 @@
 # javacc generated files
 YakaC/javacc/*.java
 
-out/
+build/

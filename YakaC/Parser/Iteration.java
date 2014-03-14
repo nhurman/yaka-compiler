@@ -1,7 +1,7 @@
 package YakaC.Parser;
 
 import YakaC.Event.EventManager;
-import YakaC.Exception.IterationException;
+import YakaC.Exception.ConditionException;
 import java.util.ArrayDeque;
 
 public class Iteration
@@ -34,12 +34,12 @@ public class Iteration
     m_eventManager.emit(Event.BeginFor, m_index);
   }
 
-  public void condition() throws IterationException
+  public void condition() throws ConditionException
   {
     Ident.Type type = m_typeChecker.lastType();
 
     if (Ident.Type.Boolean != type && Ident.Type.Error != type) {
-      m_errors.add(new IterationException(type));
+      m_errors.add(new ConditionException(type));
     }
 
     m_eventManager.emit(Event.Condition, m_loops.peek());

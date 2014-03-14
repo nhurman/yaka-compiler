@@ -246,6 +246,45 @@ public class YVM extends Writer
       }
     }, "YVM");
 
+    // Branching
+  /*
+    manager.register(YakaC.Parser.Branching.Event.BeginIf, new EventHandler() {
+      public void execute(Object params) {
+        String label = "SI" + params;
+        write(label + ":");
+        manager.emit(Event.Label, label);
+      }
+    }, "YVM");
+  */
+
+    manager.register(YakaC.Parser.Branching.Event.Condition, new EventHandler() {
+      public void execute(Object params) {
+        String label = "SINON" + params;
+        write("iffaux " + label);
+        manager.emit(Event.JumpFalse, label);
+      }
+    }, "YVM");
+
+    manager.register(YakaC.Parser.Branching.Event.BeginElse, new EventHandler() {
+      public void execute(Object params) {
+        String label = "FSI" + params;
+        write("goto " + label);
+        manager.emit(Event.Jump, label);
+
+        label = "SINON" + params;
+        write(label + ":");
+        manager.emit(Event.Label, label);
+      }
+    }, "YVM");
+
+    manager.register(YakaC.Parser.Branching.Event.EndIf, new EventHandler() {
+      public void execute(Object params) {
+        String label = "FSI" + params;
+        write(label + ":");
+        manager.emit(Event.Label, label);
+      }
+    }, "YVM");
+
     manager.register(Yaka.Event.ProgramEnd, new EventHandler() {
       public void execute(Object params) {
         write("queue");
