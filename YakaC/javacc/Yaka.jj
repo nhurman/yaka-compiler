@@ -260,10 +260,10 @@ void condition() throws YakaException : {}
     expression() { m_branching.condition(); }
   <ALORS>
     suiteInstr()
- (<SINON>     { m_branching.beginElse(); }
+ (<SINON>        { m_branching.beginElse(); }
     suiteInstr()
  )?
-  <FSI>         { m_branching.endIf(); }
+  <FSI>          { m_branching.endIf(); }
 }
 
 /*
@@ -360,7 +360,7 @@ void opMul() : {}
 void opNeg() : {}
 {
     "-" { m_expression.push(Expression.Operator.Negate); }
-  | <NON> { m_expression.push(Expression.Operator.Negate); }
+  | <NON> { m_expression.push(Expression.Operator.Not); }
 }
 
 

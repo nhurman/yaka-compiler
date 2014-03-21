@@ -200,10 +200,19 @@ public class Tasm extends Writer
       }
     }, "ASM");
 
-    manager.register(YVM.Event.INeg, new EventHandler() {
+    manager.register(YVM.Event.INot, new EventHandler() {
       public void execute(Object params) {
         write(1, "pop ax");
         write(1, "not ax");
+        write(1, "push ax");
+      }
+    }, "ASM");
+
+    manager.register(YVM.Event.INeg, new EventHandler() {
+      public void execute(Object params) {
+        write(1, "pop ax");
+        write(1, "neg ax");
+        write(1, "push ax");
       }
     }, "ASM");
 

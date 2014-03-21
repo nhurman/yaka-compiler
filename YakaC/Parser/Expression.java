@@ -30,11 +30,13 @@ public class Expression
     And,
     Or,
 
+    Not,
     Negate;
 
     protected boolean m_unary = false;
 
     static {
+      Not.m_unary = true;
       Negate.m_unary = true;
     }
 

@@ -33,6 +33,7 @@ public class YVM extends Writer
     IDif,
     IAnd,
     IOr,
+    INot,
     INeg,
     ReadInteger,
     WriteBoolean,
@@ -170,6 +171,10 @@ public class YVM extends Writer
           manager.emit(Event.IOr);
         }
 
+        else if (Operator.Not == op) {
+          write("inot");
+          manager.emit(Event.INot);
+        }
         else if (Operator.Negate == op) {
           write("ineg");
           manager.emit(Event.INeg);

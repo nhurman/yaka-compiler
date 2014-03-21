@@ -21,8 +21,15 @@ public class TypeChecker
   protected static Type computeType(Operator op, Type t1, Type t2)
   {
     if (op.unary()) {
-      if (Operator.Negate == op) {
-        return t1;
+      if (Operator.Not == op) {
+        if (Type.Boolean == t1) {
+          return Type.Boolean;
+        }
+      }
+      else if (Operator.Negate == op) {
+        if (Type.Integer == t1) {
+          return Type.Integer;
+        }
       }
     }
     else if (t1 == t2) {

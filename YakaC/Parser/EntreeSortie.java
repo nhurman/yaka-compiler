@@ -51,7 +51,7 @@ public class EntreeSortie
   public void write()
   {
     Ident.Type type = m_typeChecker.lastType();
-    Event event;
+    Event event = null;
 
     if (Ident.Type.Boolean == type) {
       event = Event.WriteBoolean;
@@ -59,11 +59,13 @@ public class EntreeSortie
     else if (Ident.Type.Integer == type) {
       event = Event.WriteInteger;
     }
-    else {
+    else if (Ident.Type.Error != type) {
       throw new RuntimeException("Unhandled type " + type);
     }
 
-    m_eventManager.emit(event);
+    if (null != event) {
+      m_eventManager.emit(event);
+    }
   }
 
   public void write(String str)
