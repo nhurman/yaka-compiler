@@ -43,6 +43,11 @@ public class YVM extends Writer
     Label,
     JumpFalse,
     Jump,
+    FunctionDeclaration,
+    FunctionEnd,
+    ReserveReturn,
+    FunctionCall,
+    Return,
     Footer;
   }
 
@@ -65,14 +70,6 @@ public class YVM extends Writer
       }
     }, "YVM");
 
-    manager.register(Yaka.Event.InstructionsStart, new EventHandler() {
-      public void execute(Object params) {
-        int size = yaka.tabIdent().count(Ident.Kind.Variable) * StackValueSize;
-        write("ouvrePrinc " + size);
-        manager.emit(Event.StackDefinition, new Integer(size));
-      }
-    }, "YVM");
-
     manager.register(Yaka.Event.Integer, new EventHandler() {
       public void execute(Object params) {
         write("iconst " + params);
@@ -90,7 +87,7 @@ public class YVM extends Writer
     manager.register(Yaka.Event.Identifier, new EventHandler() {
       public void execute(Object params) {
         try {
-          Ident ident = yaka.tabIdent().find((String)params);
+          Ident ident = yaka.locals().find((String)params);
           if (Ident.Kind.Constant == ident.kind()) {
             write("iconst " + ident.value());
             manager.emit(Event.IConst, new Integer(ident.value()));
@@ -187,35 +184,35 @@ public class YVM extends Writer
     }, "YVM");
 
 
-    manager.register(YakaC.Parser.EntreeSortie.Event.Read, new EventHandler() {
+    manager.register(YakaC.Parser.IO.Event.Read, new EventHandler() {
       public void execute(Object params) {
         write("lireEnt " + params);
         manager.emit(Event.ReadInteger, params);
       }
     }, "YVM");
 
-    manager.register(YakaC.Parser.EntreeSortie.Event.WriteBoolean, new EventHandler() {
+    manager.register(YakaC.Parser.IO.Event.WriteBoolean, new EventHandler() {
       public void execute(Object params) {
         write("ecrireBool");
         manager.emit(Event.WriteBoolean);
       }
     }, "YVM");
 
-    manager.register(YakaC.Parser.EntreeSortie.Event.WriteInteger, new EventHandler() {
+    manager.register(YakaC.Parser.IO.Event.WriteInteger, new EventHandler() {
       public void execute(Object params) {
         write("ecrireEnt");
         manager.emit(Event.WriteInteger);
       }
     }, "YVM");
 
-    manager.register(YakaC.Parser.EntreeSortie.Event.WriteString, new EventHandler() {
+    manager.register(YakaC.Parser.IO.Event.WriteString, new EventHandler() {
       public void execute(Object params) {
         write("ecrireChaine " + params);
         manager.emit(Event.WriteString, params);
       }
     }, "YVM");
 
-    manager.register(YakaC.Parser.EntreeSortie.Event.NewLine, new EventHandler() {
+    manager.register(YakaC.Parser.IO.Event.NewLine, new EventHandler() {
       public void execute(Object params) {
         write("aLaLigne");
         manager.emit(Event.NewLine, params);
@@ -252,16 +249,6 @@ public class YVM extends Writer
     }, "YVM");
 
     // Branching
-  /*
-    manager.register(YakaC.Parser.Branching.Event.BeginIf, new EventHandler() {
-      public void execute(Object params) {
-        String label = "SI" + params;
-        write(label + ":");
-        manager.emit(Event.Label, label);
-      }
-    }, "YVM");
-  */
-
     manager.register(YakaC.Parser.Branching.Event.Condition, new EventHandler() {
       public void execute(Object params) {
         String label = "SINON" + params;
@@ -290,12 +277,60 @@ public class YVM extends Writer
       }
     }, "YVM");
 
+    // Function
+
+    manager.register(Yaka.Event.InstructionsStart, new EventHandler() {
+      public void execute(Object params) {
+        int size = yaka.locals().count(Ident.Kind.Variable, -1) * StackValueSize;
+        write("ouvbloc " + size);
+        manager.emit(Event.StackDefinition, new Integer(size));
+      }
+    }, "YVM");
+
+    manager.register(YakaC.Parser.Declaration.Event.Function, new EventHandler() {
+      public void execute(Object params) {
+        write(0, params + ":");
+        manager.emit(Event.FunctionDeclaration, params);
+      }
+    }, "YVM");
+
+    manager.register(Yaka.Event.Return, new EventHandler() {
+      public void execute(Object params) {
+        int ret = (2 + yaka.locals().count(Ident.Kind.Variable, 1)) * StackValueSize;
+        write("ireturn " + ret);
+        manager.emit(Event.Return, new Integer(ret));
+      }
+    }, "YVM");
+
+    manager.register(Yaka.Event.FunctionEnd, new EventHandler() {
+      public void execute(Object params) {
+        int nbParams = (yaka.locals().count(Ident.Kind.Variable, 1)) * StackValueSize;
+        write("fermebloc " + nbParams);
+        manager.emit(Event.FunctionEnd, new Integer(nbParams));
+      }
+    }, "YVM");
+
+    manager.register(YakaC.Parser.Expression.Event.FunctionPreCall, new EventHandler() {
+      public void execute(Object params) {
+        write("reserveRetour");
+        manager.emit(Event.ReserveReturn);
+      }
+    }, "YVM");
+
+    manager.register(Yaka.Event.FunctionCall, new EventHandler() {
+      public void execute(Object params) {
+        write("call " + params);
+        manager.emit(Event.FunctionCall, params);
+      }
+    }, "YVM");
+
     manager.register(Yaka.Event.ProgramEnd, new EventHandler() {
       public void execute(Object params) {
         write("queue");
         manager.emit(Event.Footer);
       }
     }, "YVM");
+
   }
 
   protected void write(String str)

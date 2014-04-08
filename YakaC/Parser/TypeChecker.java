@@ -67,12 +67,12 @@ public class TypeChecker
     Operator op = m_opStack.pop();
 
     if (!op.unary()) {
-      t2 = m_typeStack.pop();
+      t2 = popType();
     }
 
-    t1 = m_typeStack.pop();
+    t1 = popType();
     result = computeType(op, t1, t2);
-    m_typeStack.push(result);
+    push(result);
 
     if (Type.Error == result && Type.Error != t1 && Type.Error != t2) {
       m_errors.add(new TypeMismatchException(op, t1, t2));
@@ -91,9 +91,14 @@ public class TypeChecker
     m_opStack.push(op);
   }
 
-  public Type lastType()
+  public Type peekType()
   {
     return m_typeStack.peek();
+  }
+
+  public Type popType()
+  {
+    return m_typeStack.pop();
   }
 
   public String toString()

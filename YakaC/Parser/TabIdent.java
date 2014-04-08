@@ -1,6 +1,7 @@
 package YakaC.Parser;
 
 import YakaC.Exception.*;
+import java.util.Collection;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -32,10 +33,12 @@ public class TabIdent
 
   public void add(String key, Ident val) throws RedeclaredIdentException
   {
-    if (exists(key))
+    if (exists(key)) {
       m_errors.add(new RedeclaredIdentException(key));
-    else
+    }
+    else {
       set(key, val);
+    }
   }
 
   public void set(String key, Ident val)
@@ -43,16 +46,35 @@ public class TabIdent
     m_idents.put(key, val);
   }
 
-  public int count(Ident.Kind kind)
+  public int count(Ident.Kind kind, int sign)
   {
     int num = 0;
     for (Ident ident: m_idents.values()) {
       if (kind == ident.kind()) {
-        ++num;
+        if (0 == sign ||
+           (0 < sign && 0 <= ident.value()) ||
+           (0 > sign && 0 >  ident.value())) {
+          ++num;
+        }
       }
     }
 
     return num;
+  }
+
+  public int count(Ident.Kind kind)
+  {
+    return count(kind, 0);
+  }
+
+  public Collection<Ident> all()
+  {
+    return m_idents.values();
+  }
+
+  public void clear()
+  {
+    m_idents.clear();
   }
 
   public String toString()

@@ -11,7 +11,8 @@ public class Ident
   public static enum Kind {
     Undefined,
     Constant,
-    Variable;
+    Variable,
+    Function;
   };
 
   public static class Boolean {
@@ -34,6 +35,13 @@ public class Ident
     m_kind = Kind.Undefined;
   }
 
+  public Ident(Type type)
+  {
+    m_type = type;
+    m_value = 0;
+    m_kind = Kind.Undefined;
+  }
+
   public Ident(Type type, int value)
   {
     m_type = type;
@@ -44,6 +52,11 @@ public class Ident
   public int value()
   {
     return m_value;
+  }
+
+  public void value(int value)
+  {
+    m_value = value;
   }
 
   public Type type()
@@ -58,6 +71,6 @@ public class Ident
 
   public String toString()
   {
-    return m_type.toString();
+    return (null != m_type) ? m_type.toString() : "";
   }
 }

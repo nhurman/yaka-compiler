@@ -22,12 +22,13 @@ public class Yaka
 {
   protected YakaC.Event.EventManager m_eventManager;
   protected ErrorBag     m_errors;
-  protected TabIdent     m_tabIdent;
+  protected TabIdent     m_globals;
+  protected TabIdent     m_locals;
   protected TypeChecker  m_typeChecker;
   protected Declaration  m_declaration;
   protected Expression   m_expression;
   protected Affectation  m_affectation;
-  protected EntreeSortie m_entreeSortie;
+  protected IO           m_io;
   protected Iteration    m_iteration;
   protected Branching    m_branching;
 
@@ -37,6 +38,9 @@ public class Yaka
     ProgramEnd,
     InstructionsStart,
     Operation,
+    FunctionCall,
+    FunctionEnd,
+    Return,
 
     Integer,
     Identifier,
@@ -47,12 +51,13 @@ public class Yaka
   {
     m_eventManager = new YakaC.Event.EventManager();
     m_errors = new ErrorBag(this, m_eventManager, false);
-    m_tabIdent = new TabIdent(m_errors, 10);
+    m_locals = new TabIdent(m_errors, 10);
+    m_globals = new TabIdent(m_errors, 10);
     m_typeChecker = new TypeChecker(m_errors);
-    m_declaration = new Declaration(m_errors, m_eventManager, m_tabIdent);
-    m_expression = new Expression(m_errors, m_eventManager, m_typeChecker);
-    m_affectation = new Affectation(m_errors, m_eventManager, m_tabIdent, m_typeChecker);
-    m_entreeSortie = new EntreeSortie(m_errors, m_eventManager, m_tabIdent, m_typeChecker);
+    m_declaration = new Declaration(m_errors, m_eventManager, m_globals, m_locals);
+    m_expression = new Expression(m_errors, m_eventManager, m_typeChecker, m_globals, m_declaration);
+    m_affectation = new Affectation(m_errors, m_eventManager, m_locals, m_typeChecker);
+    m_io = new IO(m_errors, m_eventManager, m_locals, m_typeChecker);
     m_iteration = new Iteration(m_errors, m_eventManager, m_typeChecker);
     m_branching = new Branching(m_errors, m_eventManager, m_typeChecker);
   }
@@ -67,9 +72,9 @@ public class Yaka
     return m_errors;
   }
 
-  public TabIdent tabIdent()
+  public TabIdent locals()
   {
-    return m_tabIdent;
+    return m_locals;
   }
 }
 
@@ -159,11 +164,36 @@ TOKEN  :
 void analyse() throws YakaException : {}
 {
   <PROGRAMME> <ident> { m_eventManager.emit(Event.ProgramStart, token_source.identLu); }
+  (declFonction())*
+  <PRINCIPAL> { m_declaration.function(null); }
   bloc()
+  <FPRINCIPAL>
   <FPROGRAMME> { m_eventManager.emit(Event.ProgramEnd); }
 }
 
-void bloc() throws YakaException : {}{
+void declFonction() throws YakaException : {}
+{
+  type() <FONCTION> <ident>
+  { m_declaration.function(token_source.identLu); }
+  paramForms() { m_declaration.function(); }
+  bloc()
+  <FFONCTION>
+  { m_eventManager.emit(Event.FunctionEnd); }
+}
+
+void paramForms() throws YakaException : {}
+{
+  "(" (paramForm() ("," paramForm())*)? ")"
+}
+
+void paramForm() throws YakaException : {}
+{
+  type() <ident>
+  { m_declaration.parameter(token_source.identLu); }
+}
+
+void bloc() throws YakaException : {}
+{
  (declConst())*
  (declVar())*
  { m_eventManager.emit(Event.InstructionsStart); }
@@ -182,9 +212,10 @@ void defConst() throws YakaException : {}
   "=" valConst()
 }
 
-void valConst() throws YakaException : {}{
+void valConst() throws YakaException : {}
+{
   <entier> { m_declaration.constant(Ident.Type.Integer, token_source.entierLu); }
- | <ident> { m_declaration.constant(m_tabIdent.find(token_source.identLu)); }
+ | <ident> { m_declaration.constant(m_locals.find(token_source.identLu)); }
  | <VRAI>  { m_declaration.constant(Ident.Type.Boolean, true); }
  | <FAUX>  { m_declaration.constant(Ident.Type.Boolean, false); }
 }
@@ -202,8 +233,8 @@ void declVar() throws YakaException : {}
 
 void type() : {}
 {
-   <ENTIER>  { m_declaration.variable(Ident.Type.Integer); }
- | <BOOLEEN> { m_declaration.variable(Ident.Type.Boolean); }
+   <ENTIER>  { m_declaration.type(Ident.Type.Integer); }
+ | <BOOLEEN> { m_declaration.type(Ident.Type.Boolean); }
 }
 
 /*
@@ -220,6 +251,7 @@ void instruction() throws YakaException : {}
 | ecriture()
 | iteration()
 | condition()
+| retourne()
 }
 
 void affectation() throws YakaException : {}
@@ -232,17 +264,17 @@ void affectation() throws YakaException : {}
 void lecture() throws YakaException : {}
 {
   <LIRE> "(" <ident> ")"
-  { m_entreeSortie.read(token_source.identLu); }
+  { m_io.read(token_source.identLu); }
 }
 
 void ecriture() throws YakaException : {}
 {
   <ECRIRE> "("
   (
-    expression() { m_entreeSortie.write(); }
-  | <chaine>     { m_entreeSortie.write(token_source.chaineLue); }
+    expression() { m_io.write(); }
+  | <chaine>     { m_io.write(token_source.chaineLue); }
   ) ")"
-| <ALALIGNE>     { m_entreeSortie.newLine(); }
+| <ALALIGNE>     { m_io.newLine(); }
 }
 
 void iteration() throws YakaException : {}
@@ -264,6 +296,15 @@ void condition() throws YakaException : {}
     suiteInstr()
  )?
   <FSI>          { m_branching.endIf(); }
+}
+
+void retourne() throws YakaException: {}
+{
+  <RETOURNE> expression()
+  {
+    m_eventManager.emit(Event.Return);
+    m_expression.returnValue();
+  }
 }
 
 /*
@@ -302,35 +343,66 @@ void facteur() throws YakaException : {}
  | opNeg() primaire() { m_expression.operation(); }
 }
 
-void primaire () throws YakaException: {}
+void primaire() throws YakaException: {}
 {
    valeur()
  | "(" expression() ")"
 
 }
 
-void valeur () throws YakaException : {}
+void valeur() throws YakaException : {}
 {
   <entier>
   {
-   m_expression.push(Ident.Type.Integer);
-   m_eventManager.emit(Event.Integer, new Integer(token_source.entierLu));
+    m_expression.push(Ident.Type.Integer);
+    m_eventManager.emit(Event.Integer, new Integer(token_source.entierLu));
   }
-| <ident>
-  {
-   m_expression.push(m_tabIdent.find(token_source.identLu));
-   m_eventManager.emit(Event.Identifier, token_source.identLu);
-  }
+| ident()
 | <VRAI>
   {
-   m_expression.push(Ident.Type.Boolean);
-   m_eventManager.emit(Event.Boolean, new Boolean(true));
+    m_expression.push(Ident.Type.Boolean);
+    m_eventManager.emit(Event.Boolean, new Boolean(true));
   }
 | <FAUX>
   {
-   m_expression.push(Ident.Type.Boolean);
-   m_eventManager.emit(Event.Boolean, new Boolean(false));
+    m_expression.push(Ident.Type.Boolean);
+    m_eventManager.emit(Event.Boolean, new Boolean(false));
   }
+}
+
+void ident() throws YakaException :
+{
+  String identLu;
+}
+{
+  <ident> { identLu = token_source.identLu; }
+  (
+    (
+      "(" { m_expression.call(m_globals.find(identLu)); }
+      (argumentsFonction())?
+      ")"
+      {
+        m_expression.call();
+        m_eventManager.emit(Event.FunctionCall, identLu);
+      }
+    )
+    |
+    {
+      m_expression.push(m_locals.find(identLu));
+      m_eventManager.emit(Event.Identifier, identLu);
+    }
+  )
+}
+
+void argumentsFonction() throws YakaException : {}
+{
+  argumentFonction()
+  ("," argumentFonction())*
+}
+
+void argumentFonction() throws YakaException : {}
+{
+  expression() { m_expression.functionParameter(); }
 }
 
 void opRel() : {}

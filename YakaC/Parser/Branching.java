@@ -45,7 +45,7 @@ public class Branching
 
   public void condition() throws ConditionException
   {
-    Ident.Type type = m_typeChecker.lastType();
+    Ident.Type type = m_typeChecker.popType();
 
     if (Ident.Type.Boolean != type && Ident.Type.Error != type) {
       m_errors.add(new ConditionException(type));

@@ -55,6 +55,7 @@ public class Affectation
 
     m_typeChecker.push(Expression.Operator.Assign);
     m_typeChecker.check();
+    m_typeChecker.popType();
 
     m_eventManager.emit(Event.Affectation,
       new Integer(m_tabIdent.find(m_name).value()));

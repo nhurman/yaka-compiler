@@ -7,7 +7,7 @@ import YakaC.Exception.TypeMismatchException;
 import YakaC.Exception.UndefinedIdentException;
 import YakaC.Target.YVM;
 
-public class EntreeSortie
+public class IO
 {
   public static enum Event implements YakaC.Event.Event
   {
@@ -23,7 +23,7 @@ public class EntreeSortie
   protected TabIdent m_tabIdent;
   protected TypeChecker m_typeChecker;
 
-  public EntreeSortie(ErrorBag errors, EventManager eventManager, TabIdent tabIdent, TypeChecker typeChecker)
+  public IO(ErrorBag errors, EventManager eventManager, TabIdent tabIdent, TypeChecker typeChecker)
   {
     m_errors = errors;
     m_eventManager = eventManager;
@@ -50,7 +50,7 @@ public class EntreeSortie
 
   public void write()
   {
-    Ident.Type type = m_typeChecker.lastType();
+    Ident.Type type = m_typeChecker.popType();
     Event event = null;
 
     if (Ident.Type.Boolean == type) {

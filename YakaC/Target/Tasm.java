@@ -42,15 +42,12 @@ public class Tasm extends Writer
         write(".model SMALL");
         write(".586");
         write(".CODE");
-        write("debut:");
-        write(1, "STARTUPCODE");
       }
     }, "ASM");
 
     manager.register(YVM.Event.StackDefinition, new EventHandler() {
       public void execute(Object params) {
-        write(1, "mov bp, sp");
-        write(1, "sub sp, " + (Integer)params);
+        write(1, "enter " + params + ", 0");
       }
     }, "ASM");
 
@@ -62,14 +59,14 @@ public class Tasm extends Writer
 
     manager.register(YVM.Event.ILoad, new EventHandler() {
       public void execute(Object params) {
-        write(1, "push word ptr [bp" + params + "]");
+        write(1, "push word ptr [bp" + offset((int)params) + "]");
       }
     }, "ASM");
 
     manager.register(YVM.Event.IStore, new EventHandler() {
       public void execute(Object params) {
         write(1, "pop ax");
-        write(1, "mov word ptr [bp" + params + "], ax");
+        write(1, "mov word ptr [bp" + offset((int)params) + "], ax");
       }
     }, "ASM");
 
@@ -218,7 +215,7 @@ public class Tasm extends Writer
 
     manager.register(YVM.Event.ReadInteger, new EventHandler() {
       public void execute(Object params) {
-        write(1, "lea dx, [bp" + params + "]");
+        write(1, "lea dx, [bp" + offset((int)params) + "]");
         write(1, "push dx");
         write(1, "call lirent");
       }
@@ -277,6 +274,43 @@ public class Tasm extends Writer
       }
     }, "ASM");
 
+    manager.register(YVM.Event.FunctionDeclaration, new EventHandler() {
+      public void execute(Object params) {
+        if ("main".equals(params)) {
+          write("debut:");
+          write(1, "STARTUPCODE");
+        }
+
+        write(0, params + ":");
+      }
+    }, "ASM");
+
+    manager.register(YVM.Event.Return, new EventHandler() {
+      public void execute(Object params) {
+        write(1, "pop ax");
+        write(1, "mov word ptr [bp" + offset((int)params) + "], ax");
+      }
+    }, "ASM");
+
+    manager.register(YVM.Event.FunctionEnd, new EventHandler() {
+      public void execute(Object params) {
+        write(1, "leave");
+        write(1, "ret " + params);
+      }
+    }, "ASM");
+
+    manager.register(YVM.Event.ReserveReturn, new EventHandler() {
+      public void execute(Object params) {
+        write(1, "sub sp, 2");
+      }
+    }, "ASM");
+
+    manager.register(YVM.Event.FunctionCall, new EventHandler() {
+      public void execute(Object params) {
+        write(1, "call " + params);
+      }
+    }, "ASM");
+
     manager.register(YVM.Event.Footer, new EventHandler() {
       public void execute(Object params) {
         write(1, "nop");
@@ -289,6 +323,11 @@ public class Tasm extends Writer
   protected int nextStr()
   {
     return m_strIndex++;
+  }
+
+  protected String offset(int offset)
+  {
+    return (offset < 0 ? "" : "+") + offset;
   }
 
   protected void write(int indent, String str)
