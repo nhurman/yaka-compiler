@@ -158,6 +158,9 @@ public class Declaration
    */
   public Type functionType()
   {
+    if (null == m_function)
+      throw new RuntimeException("No function declared");
+
     return m_function.type();
   }
 
