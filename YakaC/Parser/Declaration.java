@@ -2,7 +2,6 @@ package YakaC.Parser;
 
 import YakaC.Parser.Ident.Type;
 import YakaC.Parser.Ident.Boolean;
-import YakaC.Event.*;
 import YakaC.Exception.RedeclaredIdentException;
 import YakaC.Exception.UndefinedIdentException;
 import YakaC.Target.YVM;
@@ -12,11 +11,6 @@ import YakaC.Target.YVM;
  */
 public class Declaration
 {
-  /** Events */
-  public static enum Event implements YakaC.Event.Event
-  {
-    Function;
-  }
 
   protected Context m_context; /**< Yaka context */
   protected int m_index; /**< Index for variable positions in the stack */
@@ -155,7 +149,6 @@ public class Declaration
       ident.value(4 + (m_index - ident.value()) * YVM.StackValueSize);
     }
 
-    m_context.eventManager().emit(Event.Function, m_name);
     m_index = 0;
   }
 

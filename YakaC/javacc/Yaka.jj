@@ -14,7 +14,6 @@ PARSER_BEGIN(Yaka)
 package YakaC.javacc;
 
 import YakaC.*;
-//import YakaC.Target.*;
 import YakaC.Parser.Context;
 import YakaC.Parser.Expression;
 import YakaC.Parser.ErrorBag;
@@ -25,12 +24,14 @@ public class Yaka
 {
   protected Context m_context; /**< Yaka context */
 
+  /** Events */
   public static enum Event implements YakaC.Event.Event
   {
     ProgramStart,
     ProgramEnd,
     InstructionsStart,
     Operation,
+    FunctionDeclaration,
     FunctionCall,
     FunctionEnd,
     Return,
@@ -40,16 +41,28 @@ public class Yaka
     Boolean;
   }
 
+  /**
+   * Second constructor.
+   * Call this function right after 'new Yaka()'
+   */
   public void init()
   {
     m_context = new Context(this);
   }
 
+  /**
+   * Fetch the errors list
+   * @return ErrorBag
+   */
   public ErrorBag errors()
   {
     return m_context.errorBag();
   }
 
+  /**
+   * Fetch the context
+   * @return Context
+   */
   public Context context()
   {
     return m_context;
@@ -153,7 +166,11 @@ void declFonction() throws YakaException : {}
 {
   type() <FONCTION> <ident>
   { m_context.declaration().function(token_source.identLu); }
-  paramForms() { m_context.declaration().function(); }
+  paramForms()
+  {
+    m_context.declaration().function();
+    m_context.eventManager().emit(Event.FunctionDeclaration, m_context.declaration().name());
+  }
   bloc()
   <FFONCTION>
   { m_context.eventManager().emit(Event.FunctionEnd); }

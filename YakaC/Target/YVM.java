@@ -287,7 +287,6 @@ public class YVM extends Writer
     }, "YVM");
 
     // Function
-
     manager.register(Yaka.Event.InstructionsStart, new EventHandler() {
       public void execute(Object params) {
         int size = context.locals().count(Ident.Kind.Variable, -1) * StackValueSize;
@@ -296,7 +295,7 @@ public class YVM extends Writer
       }
     }, "YVM");
 
-    manager.register(YakaC.Parser.Declaration.Event.Function, new EventHandler() {
+    manager.register(Yaka.Event.FunctionDeclaration, new EventHandler() {
       public void execute(Object params) {
         write(params + ":");
         manager.emit(Event.FunctionDeclaration, params);

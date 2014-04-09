@@ -8,6 +8,11 @@ Compiling yaka-compiler
 
  - Run `bin\build.bat`
 
+Generating the documentation
+----------------------------
+
+ - Run `bin\doc.bat`
+
 Compiling and running a file
 ----------------------------
 
