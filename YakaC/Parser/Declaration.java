@@ -7,91 +7,124 @@ import YakaC.Exception.RedeclaredIdentException;
 import YakaC.Exception.UndefinedIdentException;
 import YakaC.Target.YVM;
 
+/**
+ * Handles variable/constant/function declarations
+ */
 public class Declaration
 {
+  /** Events */
   public static enum Event implements YakaC.Event.Event
   {
     Function;
   }
 
-  protected ErrorBag m_errors;
-  protected EventManager m_eventManager;
-  protected TabIdent m_globals;
-  protected TabIdent m_locals;
-  protected int m_index;
-  protected String m_name;
-  protected Type m_type;
-  protected IdFunct m_function;
+  protected Context m_context; /**< Yaka context */
+  protected int m_index; /**< Index for variable positions in the stack */
+  protected String m_name; /**< Last identifier name */
+  protected Type m_type; /**< Last identifier type */
+  protected IdFunct m_function; /**< Current function */
 
-  public Declaration(ErrorBag errors, EventManager eventManager, TabIdent globals, TabIdent locals)
+  /**
+   * Constructor
+   * @param context Yaka context
+   */
+  public Declaration(Context context)
   {
-    m_errors = errors;
-    m_eventManager = eventManager;
-    m_globals = globals;
-    m_locals = locals;
+    m_context = context;
     m_index = 0;
     m_name = null;
     m_type = null;
     m_function = null;
   }
 
-  /** Constants **/
+  /**
+   * Constant declaration
+   * @param name Constant name
+   */
   public void constant(String name) throws RedeclaredIdentException
   {
-    if (m_locals.exists(name)) {
-      m_errors.add(new RedeclaredIdentException(name));
+    if (m_context.locals().exists(name)) {
+      m_context.errorBag().add(new RedeclaredIdentException(name));
       name = null;
     }
 
     m_name = name;
   }
 
+  /**
+   * Set the constant's value
+   * @param type Constant type
+   * @param value Constant value
+   */
   public void constant(Type type, int value) throws RedeclaredIdentException
   {
     add(new IdConst(type, value));
   }
 
+  /**
+   * Set the constant's value
+   * @param type Constant type
+   * @param b Constant value
+   */
   public void constant(Type type, boolean b) throws RedeclaredIdentException
   {
     add(new IdConst(type, b ? Boolean.True : Boolean.False));
   }
 
+  /**
+   * Copy another constant
+   * @param ident Other constant
+   */
   public void constant(Ident ident) throws RedeclaredIdentException
   {
     add(new IdConst(ident.type(), ident.value()));
   }
 
+  /**
+   * Add the current constant to the local identifiers table
+   * @param ident Constant
+   */
   private void add(IdConst ident) throws RedeclaredIdentException
   {
     if (null == m_name)
       return;
 
-    m_locals.add(m_name, ident);
+    m_context.locals().add(m_name, ident);
     m_name = null;
   }
 
-  /** Variables **/
+  /**
+   * Declare a variable
+   * @param name Variabe name
+   */
   public void variable(String name) throws RedeclaredIdentException
   {
     m_index -= YVM.StackValueSize;
-    m_locals.add(name, new IdVar(type(), m_index));
+    m_context.locals().add(name, new IdVar(type(), m_index));
   }
 
+  /**
+   * Count the amount of declared variables
+   * @return Variables count
+   */
   public int countVariables()
   {
     return -(m_index / YVM.StackValueSize);
   }
 
-  /** Functions **/
+  /**
+   * Declare a function
+   * @param name Function name
+   */
   public void function(String name) throws RedeclaredIdentException
   {
     m_index = 0;
     m_name = name;
-    m_locals.clear();
+    m_context.locals().clear();
 
     if (null != name) {
       m_function = new IdFunct(type());
-      m_globals.add(name, m_function);
+      m_context.globals().add(name, m_function);
     }
     else {
       m_name = "main";
@@ -99,6 +132,10 @@ public class Declaration
     }
   }
 
+  /**
+   * Add a parameter to the function declaration
+   * @param name Parameter name
+   */
   public void parameter(String name) throws RedeclaredIdentException
   {
     if (null == m_function)
@@ -106,25 +143,35 @@ public class Declaration
 
     ++m_index;
     m_function.addParameter(type());
-    m_locals.add(name, new IdVar(type(), m_index));
+    m_context.locals().add(name, new IdVar(type(), m_index));
   }
 
+  /**
+   * End of function prototype
+   */
   public void function()
   {
-    for (Ident ident: m_locals.all()) {
+    for (Ident ident: m_context.locals().all()) {
       ident.value(4 + (m_index - ident.value()) * YVM.StackValueSize);
     }
 
-    m_eventManager.emit(Event.Function, m_name);
+    m_context.eventManager().emit(Event.Function, m_name);
     m_index = 0;
   }
 
+  /**
+   * Get the current function's return type
+   * @return Function type
+   */
   public Type functionType()
   {
     return m_function.type();
   }
 
-  /** General purpose **/
+  /**
+   * Get the last declared type
+   * @return Type
+   */
   public Type type()
   {
     if (null == m_type)
@@ -133,24 +180,40 @@ public class Declaration
     return m_type;
   }
 
+  /**
+   * Set the next variable's / function's type
+   * @param type Type
+   */
   public void type(Type type)
   {
     m_type = type;
   }
 
+  /**
+   * Retrieve a local identifier
+   * @return Identifier
+   */
   public Ident get(String name) throws UndefinedIdentException
   {
-    return m_locals.find(name);
+    return m_context.locals().find(name);
   }
 
+  /**
+   * Get the last declared identifier name
+   * @return Identifier name
+   */
   public String name()
   {
     return m_name;
   }
 
+  /**
+   * Debug-purpose string object representation
+   * @return String
+   */
   public String toString()
   {
-    return "-- Global symbols table:\n" + m_globals.toString()
-      + "-- Local symbols table:\n" + m_locals.toString();
+    return "-- Global symbols table:\n" + m_context.globals().toString()
+      + "-- Local symbols table:\n" + m_context.locals().toString();
   }
 }

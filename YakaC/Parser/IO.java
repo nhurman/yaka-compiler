@@ -7,8 +7,12 @@ import YakaC.Exception.TypeMismatchException;
 import YakaC.Exception.UndefinedIdentException;
 import YakaC.Target.YVM;
 
+/**
+ * Input/Output operations
+ */
 public class IO
 {
+  /** Events */
   public static enum Event implements YakaC.Event.Event
   {
     Read,
@@ -18,39 +22,44 @@ public class IO
     NewLine;
   }
 
-  protected ErrorBag m_errors;
-  protected EventManager m_eventManager;
-  protected TabIdent m_tabIdent;
-  protected TypeChecker m_typeChecker;
+  protected Context m_context; /**< Yaka context */
 
-  public IO(ErrorBag errors, EventManager eventManager, TabIdent tabIdent, TypeChecker typeChecker)
+  /**
+   * Constructor
+   * @param context Yaka context
+   */
+  public IO(Context context)
   {
-    m_errors = errors;
-    m_eventManager = eventManager;
-    m_tabIdent = tabIdent;
-    m_typeChecker = typeChecker;
+    m_context = context;
   }
 
+  /**
+   * Read a value from user input
+   * @param name The identifier that will store the value
+   */
   public void read(String name) throws UndefinedIdentException, IOReadException
   {
-    if (!m_tabIdent.exists(name)) {
-      m_errors.add(new UndefinedIdentException(name));
+    if (!m_context.locals().exists(name)) {
+      m_context.errorBag().add(new UndefinedIdentException(name));
       return;
     }
 
-    Ident ident = m_tabIdent.find(name);
+    Ident ident = m_context.locals().find(name);
     if (Ident.Kind.Variable != ident.kind() ||
         Ident.Type.Integer != ident.type()) {
-      m_errors.add(new IOReadException(name, ident));
+      m_context.errorBag().add(new IOReadException(name, ident));
       return;
     }
 
-    m_eventManager.emit(Event.Read, new Integer(ident.value()));
+    m_context.eventManager().emit(Event.Read, new Integer(ident.value()));
   }
 
+  /**
+   * Output a value
+   */
   public void write()
   {
-    Ident.Type type = m_typeChecker.popType();
+    Ident.Type type = m_context.typeChecker().popType();
     Event event = null;
 
     if (Ident.Type.Boolean == type) {
@@ -64,17 +73,24 @@ public class IO
     }
 
     if (null != event) {
-      m_eventManager.emit(event);
+      m_context.eventManager().emit(event);
     }
   }
 
+  /**
+   * Output a string
+   * @param str String
+   */
   public void write(String str)
   {
-    m_eventManager.emit(Event.WriteString, str);
+    m_context.eventManager().emit(Event.WriteString, str);
   }
 
+  /**
+   * Start a new line
+   */
   public void newLine()
   {
-    m_eventManager.emit(Event.NewLine);
+    m_context.eventManager().emit(Event.NewLine);
   }
 }

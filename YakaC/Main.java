@@ -4,8 +4,15 @@ import YakaC.javacc.Yaka;
 import YakaC.Target.YVM;
 import YakaC.Target.Tasm;
 
+/**
+ * Main class for invoking the compiler
+ */
 public class Main
 {
+  /**
+   * Main function
+   * @param args Console arguments
+   */
   public static void main(String[] args)
   {
     java.io.InputStream in;
@@ -43,18 +50,18 @@ public class Main
     Yaka yaka = new Yaka(in);
     yaka.init();
 
-    YVM yvm = new YVM(yaka, out);
-    Tasm asm = new Tasm(yaka, out);
+    YVM yvm = new YVM(yaka.context(), out);
+    Tasm asm = new Tasm(yaka.context(), out);
 
     try {
       yaka.analyse();
     } catch (YakaC.Exception.YakaException e) {
       System.out.println("Parse error: " + e);
     } catch (YakaC.javacc.ParseException e) {
-      yaka.errorBag().add(
+      yaka.errors().add(
         new YakaC.Exception.ParseException(e.getMessage()));
     } finally {
-      System.err.print(yaka.errorBag());
+      System.err.print(yaka.errors());
     }
   }
 }

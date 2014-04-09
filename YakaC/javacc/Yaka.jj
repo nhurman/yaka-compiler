@@ -14,23 +14,16 @@ PARSER_BEGIN(Yaka)
 package YakaC.javacc;
 
 import YakaC.*;
-import YakaC.Parser.*;
-import YakaC.Target.*;
+//import YakaC.Target.*;
+import YakaC.Parser.Context;
+import YakaC.Parser.Expression;
+import YakaC.Parser.ErrorBag;
+import YakaC.Parser.Ident;
 import YakaC.Exception.YakaException;
 
 public class Yaka
 {
-  protected YakaC.Event.EventManager m_eventManager;
-  protected ErrorBag     m_errors;
-  protected TabIdent     m_globals;
-  protected TabIdent     m_locals;
-  protected TypeChecker  m_typeChecker;
-  protected Declaration  m_declaration;
-  protected Expression   m_expression;
-  protected Affectation  m_affectation;
-  protected IO           m_io;
-  protected Iteration    m_iteration;
-  protected Branching    m_branching;
+  protected Context m_context; /**< Yaka context */
 
   public static enum Event implements YakaC.Event.Event
   {
@@ -49,32 +42,17 @@ public class Yaka
 
   public void init()
   {
-    m_eventManager = new YakaC.Event.EventManager();
-    m_errors = new ErrorBag(this, m_eventManager, false);
-    m_locals = new TabIdent(m_errors, 10);
-    m_globals = new TabIdent(m_errors, 10);
-    m_typeChecker = new TypeChecker(m_errors);
-    m_declaration = new Declaration(m_errors, m_eventManager, m_globals, m_locals);
-    m_expression = new Expression(m_errors, m_eventManager, m_typeChecker, m_globals, m_declaration);
-    m_affectation = new Affectation(m_errors, m_eventManager, m_locals, m_typeChecker);
-    m_io = new IO(m_errors, m_eventManager, m_locals, m_typeChecker);
-    m_iteration = new Iteration(m_errors, m_eventManager, m_typeChecker);
-    m_branching = new Branching(m_errors, m_eventManager, m_typeChecker);
+    m_context = new Context(this);
   }
 
-  public YakaC.Event.EventManager eventManager()
+  public ErrorBag errors()
   {
-    return m_eventManager;
+    return m_context.errorBag();
   }
 
-  public ErrorBag errorBag()
+  public Context context()
   {
-    return m_errors;
-  }
-
-  public TabIdent locals()
-  {
-    return m_locals;
+    return m_context;
   }
 }
 
@@ -163,22 +141,22 @@ TOKEN  :
 /**************************************/
 void analyse() throws YakaException : {}
 {
-  <PROGRAMME> <ident> { m_eventManager.emit(Event.ProgramStart, token_source.identLu); }
+  <PROGRAMME> <ident> { m_context.eventManager().emit(Event.ProgramStart, token_source.identLu); }
   (declFonction())*
-  <PRINCIPAL> { m_declaration.function(null); }
+  <PRINCIPAL> { m_context.declaration().function(null); }
   bloc()
   <FPRINCIPAL>
-  <FPROGRAMME> { m_eventManager.emit(Event.ProgramEnd); }
+  <FPROGRAMME> { m_context.eventManager().emit(Event.ProgramEnd); }
 }
 
 void declFonction() throws YakaException : {}
 {
   type() <FONCTION> <ident>
-  { m_declaration.function(token_source.identLu); }
-  paramForms() { m_declaration.function(); }
+  { m_context.declaration().function(token_source.identLu); }
+  paramForms() { m_context.declaration().function(); }
   bloc()
   <FFONCTION>
-  { m_eventManager.emit(Event.FunctionEnd); }
+  { m_context.eventManager().emit(Event.FunctionEnd); }
 }
 
 void paramForms() throws YakaException : {}
@@ -189,14 +167,14 @@ void paramForms() throws YakaException : {}
 void paramForm() throws YakaException : {}
 {
   type() <ident>
-  { m_declaration.parameter(token_source.identLu); }
+  { m_context.declaration().parameter(token_source.identLu); }
 }
 
 void bloc() throws YakaException : {}
 {
  (declConst())*
  (declVar())*
- { m_eventManager.emit(Event.InstructionsStart); }
+ { m_context.eventManager().emit(Event.InstructionsStart); }
    suiteInstr()
 }
 
@@ -207,34 +185,34 @@ void declConst() throws YakaException : {}
 
 void defConst() throws YakaException : {}
 {
-  <ident> { m_declaration.constant(token_source.identLu); }
+  <ident> { m_context.declaration().constant(token_source.identLu); }
 
   "=" valConst()
 }
 
 void valConst() throws YakaException : {}
 {
-  <entier> { m_declaration.constant(Ident.Type.Integer, token_source.entierLu); }
- | <ident> { m_declaration.constant(m_locals.find(token_source.identLu)); }
- | <VRAI>  { m_declaration.constant(Ident.Type.Boolean, true); }
- | <FAUX>  { m_declaration.constant(Ident.Type.Boolean, false); }
+  <entier> { m_context.declaration().constant(Ident.Type.Integer, token_source.entierLu); }
+ | <ident> { m_context.declaration().constant(m_context.locals().find(token_source.identLu)); }
+ | <VRAI>  { m_context.declaration().constant(Ident.Type.Boolean, true); }
+ | <FAUX>  { m_context.declaration().constant(Ident.Type.Boolean, false); }
 }
 
 
 void declVar() throws YakaException : {}
 {
   <VAR> type()
-  <ident> { m_declaration.variable(token_source.identLu); }
+  <ident> { m_context.declaration().variable(token_source.identLu); }
   (","
-      <ident> { m_declaration.variable(token_source.identLu); }
+      <ident> { m_context.declaration().variable(token_source.identLu); }
   )* ";"
 
 }
 
 void type() : {}
 {
-   <ENTIER>  { m_declaration.type(Ident.Type.Integer); }
- | <BOOLEEN> { m_declaration.type(Ident.Type.Boolean); }
+   <ENTIER>  { m_context.declaration().type(Ident.Type.Integer); }
+ | <BOOLEEN> { m_context.declaration().type(Ident.Type.Boolean); }
 }
 
 /*
@@ -256,54 +234,54 @@ void instruction() throws YakaException : {}
 
 void affectation() throws YakaException : {}
 {
-  <ident> { m_affectation.assign(token_source.identLu); }
+  <ident> { m_context.affectation().assign(token_source.identLu); }
   "="
-  expression() { m_affectation.assign(); }
+  expression() { m_context.affectation().assign(); }
 }
 
 void lecture() throws YakaException : {}
 {
   <LIRE> "(" <ident> ")"
-  { m_io.read(token_source.identLu); }
+  { m_context.io().read(token_source.identLu); }
 }
 
 void ecriture() throws YakaException : {}
 {
   <ECRIRE> "("
   (
-    expression() { m_io.write(); }
-  | <chaine>     { m_io.write(token_source.chaineLue); }
+    expression() { m_context.io().write(); }
+  | <chaine>     { m_context.io().write(token_source.chaineLue); }
   ) ")"
-| <ALALIGNE>     { m_io.newLine(); }
+| <ALALIGNE>     { m_context.io().newLine(); }
 }
 
 void iteration() throws YakaException : {}
 {
-  <TANTQUE>      { m_iteration.beginFor(); }
-    expression() { m_iteration.condition(); }
+  <TANTQUE>      { m_context.iteration().beginFor(); }
+    expression() { m_context.iteration().condition(); }
   <FAIRE>
     suiteInstr()
-  <FAIT>         { m_iteration.endFor(); }
+  <FAIT>         { m_context.iteration().endFor(); }
 }
 
 void condition() throws YakaException : {}
 {
-  <SI>           { m_branching.beginIf(); }
-    expression() { m_branching.condition(); }
+  <SI>           { m_context.branching().beginIf(); }
+    expression() { m_context.branching().condition(); }
   <ALORS>
     suiteInstr()
- (<SINON>        { m_branching.beginElse(); }
+ (<SINON>        { m_context.branching().beginElse(); }
     suiteInstr()
  )?
-  <FSI>          { m_branching.endIf(); }
+  <FSI>          { m_context.branching().endIf(); }
 }
 
 void retourne() throws YakaException: {}
 {
   <RETOURNE> expression()
   {
-    m_eventManager.emit(Event.Return);
-    m_expression.returnValue();
+    m_context.eventManager().emit(Event.Return);
+    m_context.expression().returnValue();
   }
 }
 
@@ -315,7 +293,7 @@ void expression() throws YakaException : {}
   simpleExpr()
   (
     opRel()
-    simpleExpr() { m_expression.operation(); }
+    simpleExpr() { m_context.expression().operation(); }
   )?
 }
 
@@ -324,7 +302,7 @@ void simpleExpr() throws YakaException : {}
    terme()
    (
     opAdd()
-    terme() { m_expression.operation(); }
+    terme() { m_context.expression().operation(); }
    )*
 }
 
@@ -333,14 +311,14 @@ void terme() throws YakaException : {}
   facteur()
   (
     opMul()
-    facteur() { m_expression.operation(); }
+    facteur() { m_context.expression().operation(); }
   )*
 }
 
 void facteur() throws YakaException : {}
 {
    primaire()
- | opNeg() primaire() { m_expression.operation(); }
+ | opNeg() primaire() { m_context.expression().operation(); }
 }
 
 void primaire() throws YakaException: {}
@@ -354,19 +332,19 @@ void valeur() throws YakaException : {}
 {
   <entier>
   {
-    m_expression.push(Ident.Type.Integer);
-    m_eventManager.emit(Event.Integer, new Integer(token_source.entierLu));
+    m_context.expression().push(Ident.Type.Integer);
+    m_context.eventManager().emit(Event.Integer, new Integer(token_source.entierLu));
   }
 | ident()
 | <VRAI>
   {
-    m_expression.push(Ident.Type.Boolean);
-    m_eventManager.emit(Event.Boolean, new Boolean(true));
+    m_context.expression().push(Ident.Type.Boolean);
+    m_context.eventManager().emit(Event.Boolean, new Boolean(true));
   }
 | <FAUX>
   {
-    m_expression.push(Ident.Type.Boolean);
-    m_eventManager.emit(Event.Boolean, new Boolean(false));
+    m_context.expression().push(Ident.Type.Boolean);
+    m_context.eventManager().emit(Event.Boolean, new Boolean(false));
   }
 }
 
@@ -378,18 +356,18 @@ void ident() throws YakaException :
   <ident> { identLu = token_source.identLu; }
   (
     (
-      "(" { m_expression.call(m_globals.find(identLu)); }
+      "(" { m_context.expression().call(m_context.globals().find(identLu)); }
       (argumentsFonction())?
       ")"
       {
-        m_expression.call();
-        m_eventManager.emit(Event.FunctionCall, identLu);
+        m_context.expression().call();
+        m_context.eventManager().emit(Event.FunctionCall, identLu);
       }
     )
     |
     {
-      m_expression.push(m_locals.find(identLu));
-      m_eventManager.emit(Event.Identifier, identLu);
+      m_context.expression().push(m_context.locals().find(identLu));
+      m_context.eventManager().emit(Event.Identifier, identLu);
     }
   )
 }
@@ -402,37 +380,37 @@ void argumentsFonction() throws YakaException : {}
 
 void argumentFonction() throws YakaException : {}
 {
-  expression() { m_expression.functionParameter(); }
+  expression() { m_context.expression().functionParameter(); }
 }
 
 void opRel() : {}
 {
-   "="  { m_expression.push(Expression.Operator.Equals); }
- | "<>" { m_expression.push(Expression.Operator.NEquals); }
- | "<"  { m_expression.push(Expression.Operator.Lower); }
- | "<=" { m_expression.push(Expression.Operator.LowerE); }
- | ">"  { m_expression.push(Expression.Operator.Greater); }
- | ">=" { m_expression.push(Expression.Operator.GreaterE); }
+   "="  { m_context.expression().push(Expression.Operator.Equals); }
+ | "<>" { m_context.expression().push(Expression.Operator.NEquals); }
+ | "<"  { m_context.expression().push(Expression.Operator.Lower); }
+ | "<=" { m_context.expression().push(Expression.Operator.LowerE); }
+ | ">"  { m_context.expression().push(Expression.Operator.Greater); }
+ | ">=" { m_context.expression().push(Expression.Operator.GreaterE); }
 }
 
 void opAdd() : {}
 {
-    "+" { m_expression.push(Expression.Operator.Plus); }
-  | "-" { m_expression.push(Expression.Operator.Minus); }
-  | <OU> { m_expression.push(Expression.Operator.Or); }
+    "+" { m_context.expression().push(Expression.Operator.Plus); }
+  | "-" { m_context.expression().push(Expression.Operator.Minus); }
+  | <OU> { m_context.expression().push(Expression.Operator.Or); }
 }
 
 void opMul() : {}
 {
-    "*" { m_expression.push(Expression.Operator.Times); }
-  | "/" { m_expression.push(Expression.Operator.Div); }
-  | <ET> { m_expression.push(Expression.Operator.And); }
+    "*" { m_context.expression().push(Expression.Operator.Times); }
+  | "/" { m_context.expression().push(Expression.Operator.Div); }
+  | <ET> { m_context.expression().push(Expression.Operator.And); }
 }
 
 void opNeg() : {}
 {
-    "-" { m_expression.push(Expression.Operator.Negate); }
-  | <NON> { m_expression.push(Expression.Operator.Not); }
+    "-" { m_context.expression().push(Expression.Operator.Negate); }
+  | <NON> { m_context.expression().push(Expression.Operator.Not); }
 }
 
 

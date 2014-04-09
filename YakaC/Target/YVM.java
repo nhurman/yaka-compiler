@@ -2,17 +2,21 @@ package YakaC.Target;
 
 import YakaC.javacc.Yaka;
 import YakaC.Event.*;
+import YakaC.Parser.Context;
 import YakaC.Parser.Expression.Operator;
 import YakaC.Parser.Ident;
-import YakaC.Parser.TabIdent;
 import YakaC.Exception.UndefinedIdentException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 
+/**
+ * Yaka Virtual Machine code generator
+ */
 public class YVM extends Writer
 {
-  public static final int StackValueSize = 2;
+  public static final int StackValueSize = 2; /**< Size of an integer */
 
+  /** Events */
   public static enum Event implements YakaC.Event.Event
   {
     Header,
@@ -51,10 +55,15 @@ public class YVM extends Writer
     Footer;
   }
 
-  public YVM(final Yaka yaka, OutputStream os)
+  /**
+   * Constructor
+   * @param context Yaka context
+   * @param os Output stream
+   */
+  public YVM(final Context context, OutputStream os)
   {
-    super(yaka, os);
-    final EventManager manager = yaka.eventManager();
+    super(os);
+    final EventManager manager = context.eventManager();
 
     manager.register(YakaC.Parser.ErrorBag.Event.Error, new EventHandler() {
       public void execute(Object params) {
@@ -87,7 +96,7 @@ public class YVM extends Writer
     manager.register(Yaka.Event.Identifier, new EventHandler() {
       public void execute(Object params) {
         try {
-          Ident ident = yaka.locals().find((String)params);
+          Ident ident = context.locals().find((String)params);
           if (Ident.Kind.Constant == ident.kind()) {
             write("iconst " + ident.value());
             manager.emit(Event.IConst, new Integer(ident.value()));
@@ -281,7 +290,7 @@ public class YVM extends Writer
 
     manager.register(Yaka.Event.InstructionsStart, new EventHandler() {
       public void execute(Object params) {
-        int size = yaka.locals().count(Ident.Kind.Variable, -1) * StackValueSize;
+        int size = context.locals().count(Ident.Kind.Variable, -1) * StackValueSize;
         write("ouvbloc " + size);
         manager.emit(Event.StackDefinition, new Integer(size));
       }
@@ -289,14 +298,14 @@ public class YVM extends Writer
 
     manager.register(YakaC.Parser.Declaration.Event.Function, new EventHandler() {
       public void execute(Object params) {
-        write(0, params + ":");
+        write(params + ":");
         manager.emit(Event.FunctionDeclaration, params);
       }
     }, "YVM");
 
     manager.register(Yaka.Event.Return, new EventHandler() {
       public void execute(Object params) {
-        int ret = (2 + yaka.locals().count(Ident.Kind.Variable, 1)) * StackValueSize;
+        int ret = (2 + context.locals().count(Ident.Kind.Variable, 1)) * StackValueSize;
         write("ireturn " + ret);
         manager.emit(Event.Return, new Integer(ret));
       }
@@ -304,7 +313,7 @@ public class YVM extends Writer
 
     manager.register(Yaka.Event.FunctionEnd, new EventHandler() {
       public void execute(Object params) {
-        int nbParams = (yaka.locals().count(Ident.Kind.Variable, 1)) * StackValueSize;
+        int nbParams = (context.locals().count(Ident.Kind.Variable, 1)) * StackValueSize;
         write("fermebloc " + nbParams);
         manager.emit(Event.FunctionEnd, new Integer(nbParams));
       }
@@ -333,8 +342,22 @@ public class YVM extends Writer
 
   }
 
+  /**
+   * Output a string
+   * @param str String
+   */
   protected void write(String str)
   {
     super.write("; " + str);
+  }
+
+  /**
+   * Output a string with an indentation level
+   * @param indent Indentation level
+   * @param str String
+   */
+  protected void write(int indent, String str)
+  {
+    super.write(indent, "; " + str);
   }
 }

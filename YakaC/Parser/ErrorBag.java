@@ -5,20 +5,34 @@ import YakaC.Event.EventManager;
 import YakaC.javacc.Yaka;
 import java.util.ArrayDeque;
 
+/**
+ * Stores an error list
+ */
 public class ErrorBag
 {
+  /** Events */
   public static enum Event implements YakaC.Event.Event
   {
     Error;
   }
 
+  /**
+   * Internal error representation, adds some metadata to the error message
+   */
   protected static class Error
   {
-    public YakaException exception;
-    public String message;
-    public int line;
-    public int column;
+    public YakaException exception; /**< Exception */
+    public String message; /**< Exception message */
+    public int line; /**< Error line in yaka file */
+    public int column; /**< Error column in yaka file */
 
+    /**
+     * Constructor
+     * @param e Exception
+     * @param m Message
+     * @param l Line
+     * @param c Column
+     */
     public Error(YakaException e, String m, int l, int c)
     {
       this.exception = e;
@@ -28,37 +42,53 @@ public class ErrorBag
     }
   }
 
-  protected Yaka m_yaka;
-  protected EventManager m_eventManager;
-  protected boolean m_throw;
-  protected ArrayDeque<Error> m_errors;
+  protected Context m_context; /**< Yaka context */
+  protected boolean m_throw; /**< Throw exceptions */
+  protected ArrayDeque<Error> m_errors; /**< Errors list */
 
-  public ErrorBag(Yaka yaka, EventManager eventManager, boolean throwExceptions)
+  /**
+   * Constructor
+   * @param context Yaka context
+   * @param throwExceptions Throw exceptions when errors are added?
+   */
+  public ErrorBag(Context context, boolean throwExceptions)
   {
-    m_yaka = yaka;
-    m_eventManager = eventManager;
+    m_context = context;
     m_throw = throwExceptions;
     m_errors = new ArrayDeque<Error>();
   }
 
+  /**
+   * Add an error
+   * @param exception Error
+   * @param message Exception additional details
+   */
   public void add(YakaException exception, String message)
   {
     Error e = new Error(exception, message,
-      m_yaka.token.endLine,
-      m_yaka.token.endColumn);
+      m_context.yaka().token.endLine,
+      m_context.yaka().token.endColumn);
     m_errors.add(e);
-    m_eventManager.emit(Event.Error, e);
+    m_context.eventManager().emit(Event.Error, e);
 
     /*if (m_throw) {
       throw exception;
     }*/
   }
 
+  /**
+   * Add an error
+   * @param exception Error
+   */
   public void add(YakaException exception)
   {
     add(exception, exception.toString());
   }
 
+  /**
+   * Format the error list into a string
+   * @return String
+   */
   public String toString()
   {
     if (0 == m_errors.size())

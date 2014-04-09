@@ -1,12 +1,8 @@
 *.class
 *.sublime-workspace
 
-# Package Files #
-*.jar
-*.war
-*.ear
-
 # javacc generated files
 YakaC/javacc/*.java
 
 build/
+doc/

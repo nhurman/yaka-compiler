@@ -1,6 +1,6 @@
 @echo off
 pushd %~dp0..\YakaC
-erase *.class Exception\*.class Event\*.class Parser\*.class javacc\*.class javacc\*.java
-cd ..\build
-erase *.LST *.OBJ *.MAP *.EXE *.asm
+del /q *.class Event\*.class Exception\*.class javacc\*.class javacc\*.java Parser\*.class Target\*.class
+cd ..
+rmdir /s /q build
 popd

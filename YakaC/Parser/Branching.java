@@ -4,8 +4,12 @@ import YakaC.Event.EventManager;
 import YakaC.Exception.ConditionException;
 import java.util.ArrayDeque;
 
+/**
+ * Handles branchings, ie if(...) { } else { }
+ */
 public class Branching
 {
+  /** Events */
   public static enum Event implements YakaC.Event.Event
   {
     BeginIf,
@@ -14,62 +18,85 @@ public class Branching
     EndIf;
   }
 
+  /**
+   * Represents a branch, stores its index and wether or not it has an else statement
+   */
   protected static class Branch
   {
-    public int index;
-    public boolean hasElse = false;
+    public int index; /**< Branch index */
+    public boolean hasElse = false; /**< Branch has an else statement */
 
+    /**
+     * @param i Branch index
+     */
     public Branch(int i) { index = i; }
   }
 
-  protected ErrorBag m_errors;
-  protected EventManager m_eventManager;
-  protected TypeChecker m_typeChecker;
-  protected int m_index;
-  protected ArrayDeque<Branch> m_branches;
+  protected Context m_context; /**< Yaka context */
+  protected int m_index; /**< Next branch index */
+  protected ArrayDeque<Branch> m_branches; /**< Branches stack */
 
-  public Branching(ErrorBag errors, EventManager eventManager, TypeChecker typeChecker)
+  /**
+   * Constructor
+   * @param context Yaka context
+   */
+  public Branching(Context context)
   {
-    m_errors = errors;
-    m_eventManager = eventManager;
-    m_typeChecker = typeChecker;
+    m_context = context;
     m_index = -1;
     m_branches = new ArrayDeque<Branch>();
   }
 
+  /**
+   * If statement
+   */
   public void beginIf()
   {
     m_branches.push(new Branch(++m_index));
-    m_eventManager.emit(Event.BeginIf, m_index);
+    m_context.eventManager().emit(Event.BeginIf, m_index);
   }
 
+  /**
+   * Parse the If condition
+   * @throws ConditionException if it doesnt not evaluate to a boolean
+   */
   public void condition() throws ConditionException
   {
-    Ident.Type type = m_typeChecker.popType();
+    Ident.Type type = m_context.typeChecker().popType();
 
     if (Ident.Type.Boolean != type && Ident.Type.Error != type) {
-      m_errors.add(new ConditionException(type));
+      m_context.errorBag().add(new ConditionException(type));
     }
 
-    m_eventManager.emit(Event.Condition, m_branches.peek().index);
+    m_context.eventManager().emit(Event.Condition, m_branches.peek().index);
   }
 
+  /**
+   * Else statement
+   */
   public void beginElse()
   {
+    if (0 == m_branches.size()) {
+      throw new RuntimeException("No branchings left on the stack");
+    }
+
     m_branches.peek().hasElse = true;
-    m_eventManager.emit(Event.BeginElse, m_branches.peek().index);
+    m_context.eventManager().emit(Event.BeginElse, m_branches.peek().index);
   }
 
+  /**
+   * EndIf statement, generate an empty else if it was not added
+   */
   public void endIf()
   {
     if (0 == m_branches.size()) {
-      throw new RuntimeException("No labels left on the stack");
+      throw new RuntimeException("No branchings left on the stack");
     }
 
     if (!m_branches.peek().hasElse) {
-      m_eventManager.emit(Event.BeginElse, m_branches.peek().index);
+      m_context.eventManager().emit(Event.BeginElse, m_branches.peek().index);
     }
 
-    m_eventManager.emit(Event.EndIf, m_branches.pop().index);
+    m_context.eventManager().emit(Event.EndIf, m_branches.pop().index);
   }
 }

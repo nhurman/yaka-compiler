@@ -1,18 +1,31 @@
 package YakaC.Event;
 
-import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayDeque;
 
+/**
+ * Implements an event mecanism
+ */
 public class EventManager
 {
+  /** List of event handlers per event */
   protected HashMap<Event, ArrayDeque<EventHandler>> m_handlers;
 
+  /**
+   * Constructor
+   */
   public EventManager()
   {
     m_handlers = new HashMap<Event, ArrayDeque<EventHandler>>();
   }
 
+  /**
+   * Register an event handler
+   * @param event Event
+   * @param handler Handler
+   * @param tag Tag
+   * @return True if the handler was registered
+   */
   public boolean register(Event event, EventHandler handler, String tag)
   {
     if (!m_handlers.containsKey(event)) {
@@ -28,11 +41,23 @@ public class EventManager
     return true;
   }
 
+  /**
+   * Register an event handler
+   * @param event Event
+   * @param handler Handler
+   * @return True if the handler was registered
+   */
   public boolean register(Event event, EventHandler handler)
   {
     return register(event, handler, "");
   }
 
+  /**
+   * Unregister an event handler
+   * @param event Event
+   * @param handler Handler
+   * @return True if the handler was unregistered
+   */
   public boolean unregister(Event event, EventHandler handler)
   {
     if (!m_handlers.containsKey(event)) {
@@ -42,6 +67,12 @@ public class EventManager
     return m_handlers.get(event).remove(handler);
   }
 
+  /**
+   * Unregister a group of event handlers using their tag
+   * @param event Event
+   * @param tag Tag
+   * @return True if the handlers were unregistered
+   */
   public boolean unregister(Event event, String tag)
   {
     boolean status = false;
@@ -59,6 +90,11 @@ public class EventManager
     return status;
   }
 
+  /**
+   * Unregister a group of event handlers using their tag
+   * @param tag Tag
+   * @return True if the handlers were unregistered
+   */
   public boolean unregister(String tag)
   {
     boolean status = false;
@@ -70,6 +106,12 @@ public class EventManager
     return status;
   }
 
+  /**
+   * Emit an event, calling all its handlers
+   * @param event Event
+   * @param params Event parameters
+   * @return True if handlers were executed
+   */
   public boolean emit(Event event, Object params)
   {
     if (!m_handlers.containsKey(event)) {
@@ -83,6 +125,11 @@ public class EventManager
     return m_handlers.get(event).size() > 0;
   }
 
+  /**
+   * Emit an event, calling all its handlers
+   * @param event Event
+   * @return True if handlers were executed
+   */
   public boolean emit(Event event)
   {
     return emit(event, null);

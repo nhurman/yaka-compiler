@@ -10,14 +10,21 @@ import YakaC.Exception.MainReturnException;
 import YakaC.Exception.ReturnTypeException;
 import java.util.ArrayDeque;
 
+/**
+ * Handles expressions, ie (1 + a) * b to check type compatibility
+ */
 public class Expression
 {
+  /** Events */
   public static enum Event implements YakaC.Event.Event
   {
     Operation,
     FunctionPreCall;
   }
 
+  /**
+   * Available operators
+   */
   public static enum Operator {
     Assign,
 
@@ -39,6 +46,9 @@ public class Expression
     Not,
     Negate;
 
+    /**
+     * Set to true if the operator only takes one operand
+     */
     protected boolean m_unary = false;
 
     static {
@@ -46,71 +56,94 @@ public class Expression
       Negate.m_unary = true;
     }
 
+    /**
+     * Returns true if the operator is unary
+     * @return unary?
+     */
     public boolean unary()
     {
       return m_unary;
     }
   };
 
-  protected ErrorBag m_errors;
-  protected EventManager m_eventManager;
-  protected TypeChecker m_typeChecker;
-  protected TabIdent m_globals;
-  protected Declaration m_declaration;
-  protected ArrayDeque<Ident> m_functionStack;
-  protected ArrayDeque<IdFunct> m_signatureStack;
+  protected Context m_context; /**< Yaka context */
+  protected ArrayDeque<Ident> m_functionStack; /**< Function call stack */
+  protected ArrayDeque<IdFunct> m_signatureStack; /**< Function signature stack */
 
-  public Expression(ErrorBag errors, EventManager eventManager, TypeChecker typeChecker, TabIdent globals, Declaration declaration)
+  /**
+   * Constructor
+   * @param context Yaka context
+   */
+  public Expression(Context context)
   {
-    m_errors = errors;
-    m_eventManager = eventManager;
-    m_typeChecker = typeChecker;
-    m_globals = globals;
-    m_declaration = declaration;
+    m_context = context;
     m_functionStack = new ArrayDeque<Ident>();
     m_signatureStack = new ArrayDeque<IdFunct>();
   }
 
+  /**
+   * Push an operator on the stack
+   * @param op Operator
+   */
   public void push(Operator op)
   {
-    m_typeChecker.push(op);
+    m_context.typeChecker().push(op);
   }
 
+  /**
+   * Push a type on the stack
+   * @param type Type
+   */
   public void push(Type type)
   {
-    m_typeChecker.push(type);
+    m_context.typeChecker().push(type);
   }
 
+  /**
+   * Push an identifier's type on the stack
+   * @param ident Identifier
+   */
   public void push(Ident ident)
   {
     push(ident.type());
   }
 
+  /**
+   * Compute an operation
+   * @throws TypeMismatchException if types are incompatible
+   */
   public void operation() throws TypeMismatchException
   {
-    Operator operator = m_typeChecker.check();
-    m_eventManager.emit(Event.Operation, operator);
+    Operator operator = m_context.typeChecker().check();
+    m_context.eventManager().emit(Event.Operation, operator);
   }
 
+  /**
+   * Function pre-call
+   * @param function Function
+   */
   public void call(Ident function)
   {
     if (Kind.Undefined == function.kind()) {
       function = new IdFunct(Type.Error);
     }
     else if (Kind.Function != function.kind()) {
-      m_errors.add(new CallException(null, function));
+      m_context.errorBag().add(new CallException(null, function));
       return;
     }
 
     m_functionStack.push(function);
     m_signatureStack.push(new IdFunct());
-    m_eventManager.emit(Event.FunctionPreCall);
+    m_context.eventManager().emit(Event.FunctionPreCall);
   }
 
+  /**
+   * End of function arguments
+   */
   public void call()
   {
     if (m_functionStack.isEmpty() || m_signatureStack.isEmpty()) {
-      m_typeChecker.push(Type.Error);
+      m_context.typeChecker().push(Type.Error);
       return;
     }
 
@@ -118,36 +151,46 @@ public class Expression
     IdFunct signature = m_signatureStack.pop();
 
     if (Type.Error != function.type() && !function.equals(signature)) {
-      m_errors.add(new SignatureException(function, signature));
+      m_context.errorBag().add(new SignatureException(function, signature));
     }
 
-    m_typeChecker.push(function.type());
+    m_context.typeChecker().push(function.type());
   }
 
+  /**
+   * Add a function parameter
+   */
   public void functionParameter()
   {
     if (m_signatureStack.isEmpty()) {
-      m_typeChecker.popType();
+      m_context.typeChecker().popType();
       return;
     }
 
-    m_signatureStack.peek().addParameter(m_typeChecker.popType());
+    m_signatureStack.peek().addParameter(m_context.typeChecker().popType());
   }
 
+  /**
+   * Return statement
+   */
   public void returnValue()
   {
-    if ("main".equals(m_declaration.name())) {
-      m_errors.add(new MainReturnException());
+    if ("main".equals(m_context.declaration().name())) {
+      m_context.errorBag().add(new MainReturnException());
     }
 
-    Type t = m_typeChecker.popType();
-    if (m_declaration.functionType() != t) {
-      m_errors.add(new ReturnTypeException(m_declaration.functionType(), t));
+    Type t = m_context.typeChecker().popType();
+    if (m_context.declaration().functionType() != t) {
+      m_context.errorBag().add(new ReturnTypeException(m_context.declaration().functionType(), t));
     }
   }
 
+  /**
+   * Debug-purpose string object representation
+   * @return String
+   */
   public String toString()
   {
-    return m_typeChecker.toString();
+    return m_context.typeChecker().toString();
   }
 }

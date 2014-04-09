@@ -4,8 +4,12 @@ import YakaC.Event.EventManager;
 import YakaC.Exception.ConditionException;
 import java.util.ArrayDeque;
 
+/**
+ * Handles iterations, ie while(...) { }
+ */
 public class Iteration
 {
+  /** Events */
   public static enum Event implements YakaC.Event.Event
   {
     BeginFor,
@@ -13,44 +17,53 @@ public class Iteration
     EndFor;
   }
 
-  protected ErrorBag m_errors;
-  protected EventManager m_eventManager;
-  protected TypeChecker m_typeChecker;
-  protected int m_index;
-  protected ArrayDeque<Integer> m_loops;
+  protected Context m_context; /**< Yaka context */
+  protected int m_index; /**< Next iteration index */
+  protected ArrayDeque<Integer> m_loops; /**< Iterations stack */
 
-  public Iteration(ErrorBag errors, EventManager eventManager, TypeChecker typeChecker)
+  /**
+   * Constructor
+   * @param context Yaka context
+   */
+  public Iteration(Context context)
   {
-    m_errors = errors;
-    m_eventManager = eventManager;
-    m_typeChecker = typeChecker;
+    m_context = context;
     m_index = -1;
     m_loops = new ArrayDeque<Integer>();
   }
 
+  /**
+   * Start a for loop
+   */
   public void beginFor()
   {
     m_loops.push(++m_index);
-    m_eventManager.emit(Event.BeginFor, m_index);
+    m_context.eventManager().emit(Event.BeginFor, m_index);
   }
 
+  /**
+   * Set the loop's condition
+   */
   public void condition() throws ConditionException
   {
-    Ident.Type type = m_typeChecker.peekType();
+    Ident.Type type = m_context.typeChecker().peekType();
 
     if (Ident.Type.Boolean != type && Ident.Type.Error != type) {
-      m_errors.add(new ConditionException(type));
+      m_context.errorBag().add(new ConditionException(type));
     }
 
-    m_eventManager.emit(Event.Condition, m_loops.peek());
+    m_context.eventManager().emit(Event.Condition, m_loops.peek());
   }
 
+  /**
+   * End of for loop
+   */
   public void endFor()
   {
     if (0 == m_loops.size()) {
       throw new RuntimeException("No labels left on the stack");
     }
 
-    m_eventManager.emit(Event.EndFor, m_loops.pop());
+    m_context.eventManager().emit(Event.EndFor, m_loops.pop());
   }
 }

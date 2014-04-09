@@ -1,22 +1,28 @@
 package YakaC.Target;
 
-import YakaC.javacc.Yaka;
 import YakaC.Event.*;
 import YakaC.Target.YVM;
+import YakaC.Parser.Context;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 
+/**
+ * Generate TASM code
+ */
 public class Tasm extends Writer
 {
-  public static final int StackValueSize = 2;
+  protected int m_strIndex; /**< Next string index */
 
-  protected int m_strIndex;
-
-  public Tasm(final Yaka yaka, OutputStream os)
+  /**
+   * Constructor
+   * @param context Yaka context
+   * @param os Output stream
+   */
+  public Tasm(final Context context, OutputStream os)
   {
-    super(yaka, os);
+    super(os);
     m_strIndex = 0;
-    final EventManager manager = yaka.eventManager();
+    final EventManager manager = context.eventManager();
 
     manager.register(YakaC.Parser.ErrorBag.Event.Error, new EventHandler() {
       public void execute(Object params) {
@@ -320,16 +326,29 @@ public class Tasm extends Writer
     }, "ASM");
   }
 
+  /**
+   * Get the next string's index
+   * @return Index
+   */
   protected int nextStr()
   {
     return m_strIndex++;
   }
 
+  /**
+   * Transform an offset to its string value, adding a + or a - depending on the sign
+   * @return String representation of the offset
+   */
   protected String offset(int offset)
   {
     return (offset < 0 ? "" : "+") + offset;
   }
 
+  /**
+   * Output a string with an indentation level
+   * @param indent Indentation level
+   * @param str String
+   */
   protected void write(int indent, String str)
   {
     if (indent > 0) ++indent;

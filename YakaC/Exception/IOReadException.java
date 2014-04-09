@@ -2,17 +2,28 @@ package YakaC.Exception;
 
 import YakaC.Parser.Ident;
 
+/**
+ * Incompatible types for I/O operations
+ */
 public class IOReadException extends YakaException
 {
-  protected String m_name;
-  protected Ident m_ident;
+  protected String m_name; /**< Identifier name */
+  protected Ident m_ident; /**< Identifier */
 
+  /**
+   * @param name Identifier name
+   * @param ident Identifier
+   */
   public IOReadException(String name, Ident ident)
   {
     m_name = name;
     m_ident = ident;
   }
 
+  /**
+   * Get a string representation of the exception
+   * @return String
+   */
   public String toString()
   {
     String out = "I/O error: Cannot read into '" + m_name + "'";

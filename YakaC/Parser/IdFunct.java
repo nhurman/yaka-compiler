@@ -3,10 +3,17 @@ package YakaC.Parser;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 
+/**
+ * Function representation
+ */
 public class IdFunct extends Ident
 {
+  /** Parameters list */
   protected ArrayDeque<Type> m_parameters;
 
+  /**
+   * Constructs an empty function
+   */
   public IdFunct()
   {
     super(null, 0);
@@ -14,6 +21,9 @@ public class IdFunct extends Ident
     m_parameters = new ArrayDeque<Type>();
   }
 
+  /**
+   * Constructs an empty function with a return type
+   */
   public IdFunct(Type type)
   {
     super(type, 0);
@@ -21,17 +31,30 @@ public class IdFunct extends Ident
     m_parameters = new ArrayDeque<Type>();
   }
 
+  /**
+   * Add a parameter
+   * @param type Parameter type
+   */
   public void addParameter(Type type)
   {
     m_parameters.add(type);
     ++m_value;
   }
 
+  /**
+   * Get a list of the parameters
+   * @return Parameters
+   */
   public final ArrayDeque<Type> getParameters()
   {
     return m_parameters;
   }
 
+  /**
+   * Check if two functions' signatures match
+   * @param other Second function
+   * @return true if both functions have the same ssignature
+   */
   public boolean equals(IdFunct other)
   {
     if (null != m_type
@@ -52,6 +75,10 @@ public class IdFunct extends Ident
     return !(i1.hasNext() || i2.hasNext());
   }
 
+  /**
+   * Debug-purpose string object representation
+   * @return String
+   */
   public String toString()
   {
     String params = "";
