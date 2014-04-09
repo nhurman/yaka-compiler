@@ -13,3 +13,5 @@ INPUT                  = ../YakaC
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.java
 RECURSIVE              = YES
+GENERATE_LATEX         = NO
+GENERATE_HTML          = YES
