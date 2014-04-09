@@ -156,7 +156,11 @@ void analyse() throws YakaException : {}
 {
   <PROGRAMME> <ident> { m_context.eventManager().emit(Event.ProgramStart, token_source.identLu); }
   (declFonction())*
-  <PRINCIPAL> { m_context.declaration().function(null); }
+  <PRINCIPAL>
+  {
+    m_context.declaration().function(null);
+    m_context.eventManager().emit(Event.FunctionDeclaration, "main");
+  }
   bloc()
   <FPRINCIPAL>
   <FPROGRAMME> { m_context.eventManager().emit(Event.ProgramEnd); }
